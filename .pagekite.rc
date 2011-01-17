@@ -1,0 +1,24 @@
+# Sample pageKite config for pchampon@gmail.com
+###############################################################################
+
+# Enable the HTTP UI, with a very ugly password.
+httpd=localhost:9999
+httppass=ex1gent00
+
+# Use the pageKite.net service by default
+frontends=1:frontends.b5p.us:2222
+dyndns=pagekite.net
+
+###############################################################################
+# Back-end definitions follow.
+#
+# By default, these pageKites just try to connect to localhost on port 80.
+#
+# If you have a TLS-enabled web-server as well, commenting out the second
+# line will probably suffice to enable the pageKite for it too.
+#
+backend=http:flah01.pagekite.me:localhost:3333:ex1gent00
+backend=http:flah00.pagekite.me:localhost:3000:ex1gent00
+backend=http:flah03.pagekite.me:localhost:8181:ex1gent00
+#backend=https:flah00.pagekite.me:localhost:443:ex1gent00
+# END #

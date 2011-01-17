@@ -1,0 +1,6 @@
+startup_message off
+defscrollback 100000
+password UCXpLLPZN85xY
+nethack on
+vbell on
+vbell_msg "annoying..."
