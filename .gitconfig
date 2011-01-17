@@ -1,0 +1,17 @@
+[user]
+	name = Philip Champon
+	email = pchampon@gmail.com
+[core]
+	editor = /opt/local/bin/vim
+[merge]
+	tool = vimdiff
+[color]
+	status = auto
+	branch = auto
+	interactive = auto
+	diff = auto
+[alias]
+	co = checkout
+	up = pull
+	unstage = reset HEAD --
+	last = log -1 HEAD
