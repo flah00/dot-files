@@ -1,0 +1,2 @@
+#!/bin/bash
+find . -name .git -prune -o -name .[a-z]\* -print | cpio -dpm ~
