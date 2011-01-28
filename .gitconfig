@@ -10,8 +10,12 @@
 	branch = auto
 	interactive = auto
 	diff = auto
+	show-branch = auto
 [alias]
 	co = checkout
 	up = pull
 	unstage = reset HEAD --
 	last = log -1 HEAD
+	diff-staged = diff --cached
+[github]
+	user = flah00

@@ -7,6 +7,7 @@ if [ -d ~/bin ]; then
 	export PATH=$PATH:~/bin
 fi
 
+[ $TERM = "xterm" ] && export TERM=xterm-256color
 export HTML_TIDY=~/.tidyrc
 export SCREENDIR=$HOME/.screens
 export HISTCONTROL="erasedups:ignorespace"
