@@ -1,18 +1,8 @@
-[ -z $PS1 ] && exit 
+unset DYLD_LIBRARY_PATH
+unset MANPATH
 
-if [ `uname -s` = "Darwin" ]; then
-	unset DYLD_LIBRARY_PATH
-	export EDITOR=/opt/local/bin/vim
-	alias vim=/opt/local/bin/vim
-	alias vi=vim
-	alias top="top -o cpu -O rsize"
-	unset MANPATH
-	[ -d /usr/local/etc/bash_completion.d/ ] && . /usr/local/etc/bash_completion.d/*
-else
-	[[ -f $HOME/.bash_aliases ]] && . $HOME/.bash_aliases
-fi
-
-alias vimex='vim --servername VIM -s ~/.vim/scripts/vimex.vim $*'
-export PS1='\h:\w \u\$ '
-
+[[ -f ~/.completion/all ]] && . ~/.completion/all
+[[ -f `brew --prefix 2>/dev/null`/etc/bash_completion ]] && . `brew --prefix`/etc/bash_completion
 [[ -s "$HOME/.rvm/scripts/rvm" ]] && . "$HOME/.rvm/scripts/rvm" # This loads RVM into a shell session.
+[[ -f ~/.bash_aliases ]] && . ~/.bash_aliases
+[[ -f ~/.bash_functions ]] && . ~/.bash_functions
