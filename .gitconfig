@@ -3,6 +3,8 @@
 	email = pchampon@gmail.com
 [core]
 	editor = /opt/local/bin/vim
+	excludesfile = /Users/flah/.gitignore_global
+  autocrlf = false
 [merge]
 	tool = vimdiff
 [color]
@@ -19,3 +21,5 @@
 	diff-staged = diff --cached
 [github]
 	user = flah00
+[merge "vimdiff"]
+	path = /opt/local/bin/vimdiff

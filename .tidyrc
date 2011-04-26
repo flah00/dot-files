@@ -19,9 +19,11 @@ quote-ampersand: no
 break-before-br: no
 uppercase-tags: no
 uppercase-attributes: no
-char-encoding: latin1
 new-blocklevel-tags: td
 merge-divs: no
 merge-spans: no
 output-file: /tmp/buffer.html
 error-file: /tmp/buffer.log
+wrap-asp: no
+wrap-jste: no
+wrap-php: no
