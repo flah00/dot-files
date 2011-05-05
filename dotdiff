@@ -2,7 +2,7 @@
 # vim:ft=sh:
 skip="-name modules -o -name completion -o -name \*.sw[opn] -o -name .git -o -name README.md -o -name dotdiff -o -name install"
 
-if [ $1 = "cp" ]; then
+if [ ${1:-nocp} = "cp" ]; then
   for file in `find . \( $skip \) -prune -o -type f -print`
   do
     orig=~/${file##*/}
@@ -13,6 +13,6 @@ else
   (for file in `find . \( $skip \) -prune -o -type f -print`
   do
     diff -ub $file ~/${file##*/} 2>/dev/null
-  done) | less -E
+  done) | less -E -X
 fi
 
