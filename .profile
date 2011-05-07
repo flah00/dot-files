@@ -8,6 +8,7 @@ if [ -d ~/bin ]; then
 fi
 
 [ $TERM = "xterm" -o $TERM = "xterm-color" ] && export TERM="xterm-256color"
+export LANG='en_US.UTF-8'
 export CDPATH=".:~/devel/adaptly"
 export HTML_TIDY=~/.tidyrc
 export SCREENDIR=$HOME/.screens
