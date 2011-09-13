@@ -137,9 +137,9 @@ run "rvm #{current_ruby}@#{app_name} -S rails g jquery:install"
 run "rvm #{current_ruby}@#{app_name} -S rails g pickle"
 run "rvm #{current_ruby}@#{app_name} -S rails g rspec:install"
 
-run "rvm #{current_ruby}@#{app_name} -S rails generate scaffold user name:string password:string"
-route "root :to => 'user#index'"
-run "rvm #{current_ruby}@#{app_name} -S rake db:migrate"
+#run "rvm #{current_ruby}@#{app_name} -S rails generate scaffold user name:string password:string"
+#route "root :to => 'user#index'"
+#run "rvm #{current_ruby}@#{app_name} -S rake db:migrate"
 run "rm public/index.html"
 
 run "git init"

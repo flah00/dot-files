@@ -1,6 +1,6 @@
 [user]
 	name = Philip Champon
-	email = pchampon@gmail.com
+	email = philip@adaptly.com
 [core]
 	editor = /opt/local/bin/vim
 	excludesfile = /Users/flah/.gitignore_global

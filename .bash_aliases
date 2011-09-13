@@ -3,7 +3,7 @@ alias grep='grep --color=auto'
 alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias gemcd='cd $(dirname `gem show $1`)'
-alias bundlecd='cd $(bundle show $1)'
+#alias bundlecd='cd $(bundle show $1)'
 alias vi=vim
 alias vimex='vim --servername VIM -s ~/.vim/scripts/vimex.vim $*'
 
