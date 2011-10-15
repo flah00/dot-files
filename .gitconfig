@@ -19,6 +19,7 @@
 	unstage = reset HEAD --
 	last = log -1 HEAD
 	diff-staged = diff --cached
+	short-log = log --abbrev-commit --pretty=oneline
 [github]
 	user = flah00
 [merge "vimdiff"]

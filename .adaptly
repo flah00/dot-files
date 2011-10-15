@@ -1,4 +1,6 @@
 export P='--app adaptly-production'
+export H='--app adaptly-staging-hot'
 export S='--app adaptly-staging'
 export T='--app adaptly-test'
+export I='--app adaptly-insightful'
 # vim:ft=sh:
