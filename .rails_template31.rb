@@ -11,6 +11,10 @@ run "rm README"
 file "README.md", <<-'EOT'
 EOT
 
+file "Procfile", <<EOT
+web: bundle exec thin start -p $PORT
+EOT
+
 file "Gemfile", <<'EOT'
 source 'http://rubygems.org'
 
@@ -144,6 +148,8 @@ public/uploads/**/*
 vendor/cache/*
 EOT
 
+run "rvm #{current_ruby}@#{app_name} -S rails g cancan:ability"
+run "rvm #{current_ruby}@#{app_name} -S rails g formtastic:install"
 run "rvm #{current_ruby}@#{app_name} -S rails g rspec:install"
 
 run "rm public/index.html"
