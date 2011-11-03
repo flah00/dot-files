@@ -6,7 +6,7 @@ if [ ${1:-nocp} = "cp" ]; then
   for file in `find . \( $skip \) -prune -o -type f -print`
   do
     orig=~/${file#*/}
-    echo "diff -q $orig $file &>/dev/null || cp $orig $file"
+    diff -q $orig $file &>/dev/null || cp $orig $file
   done
 
 else

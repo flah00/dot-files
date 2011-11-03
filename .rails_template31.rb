@@ -1,13 +1,31 @@
+
+## snapshot virgin rails
+run "git init"
+run "git add ."
+run "git commit -m 'init'"
+
+# requires rvm
+re = /^=>\s+(.*)\s\[/ 
+rvm_list = %x{rvm list}
+## use default rvm or assume there's only one and use that
+match = rvm_list.match(re)[1] rescue rvm_list.split("\n").last.match(re)[1]
+unless match
+  $stdout.puts("no suitable rvm ruby install found")
+  exit(1)
+end
+current_ruby = match.strip
+ 
+
 run('sed \'s/\(^[[:space:]]*config.filter_param.*\)/\1\\
     config.generators do |g|\\
       g.orm :active_record\\
       g.test_framework :rspec\\
-      g.template_engine :haml, :fixture => true, :views => false, :helpers => false\\
+      g.template_engine :haml, fixture: true, views: false, helpers: false\\
       g.fixture_replacement :factory_girl\\
     end/\' config/application.rb > tmp/application.rb')
 run('mv tmp/application.rb config')
 
-run "rm README"
+run "git rm README"
 file "README.md", <<-'EOT'
 EOT
 
@@ -15,10 +33,11 @@ file "Procfile", <<EOT
 web: bundle exec thin start -p $PORT
 EOT
 
+run "rm Gemfile"
 file "Gemfile", <<'EOT'
 source 'http://rubygems.org'
 
-gem 'rails', '3.1.0'
+gem 'rails', '3.1.1'
 gem 'pg'
 gem 'thin'
 gem 'newrelic_rpm'
@@ -37,23 +56,22 @@ gem 'cancan'
 
 group :development do
   gem 'guard'
-	gem 'guard-bundler'
-	gem 'guard-rspec'
-	gem 'haml-rails'
-	gem 'heroku', '>2.0'
-	gem 'web-app-theme', '~> 0.8.0'
+  gem 'guard-bundler'
+  gem 'guard-rspec'
+  gem 'haml-rails'
+  gem 'heroku', '>2.0'
+  gem 'web-app-theme', '~> 0.8.0'
 end
 
 group :development, :test do
   gem 'faker'
   gem 'pry'
   gem 'rspec-rails'
-  gem 'ruby-debug19', :require => 'ruby-debug'
-	gem 'factory_girl_rails'
+  gem 'ruby-debug19', require: 'ruby-debug'
+  gem 'factory_girl_rails'
 end
 EOT
 
-current_ruby = %x{rvm list}.match(/^=>\s+(.*)\s\[/)[1].strip
 run "rvm gemset create #{app_name}"
 run "rvm #{current_ruby}@#{app_name} gem install bundler"
 run "rvm #{current_ruby}@#{app_name} -S bundle install"
@@ -62,7 +80,7 @@ file ".rvmrc", <<-EOT
 rvm use #{current_ruby}@#{app_name}
 EOT
 
-run "rm app/views/layouts/application.html.erb"
+run "git rm app/views/layouts/application.html.erb"
 file "app/views/layouts/application.html.haml", <<EOT
 !!! 5
 %head
@@ -73,9 +91,9 @@ file "app/views/layouts/application.html.haml", <<EOT
   = csrf_meta_tags
 %body
   .notice
-    = notice
+    = flash[:notice]
   .alert
-    = alert
+    = flash[:alert]
   = yield
 EOT
 
@@ -133,7 +151,6 @@ Thumbs.db
 # Rails #
 #########
 .sass-cache/
-public/assets/
 .bundle
 db/*.sqlite3
 tmp/**/*
@@ -143,8 +160,6 @@ doc/app
 *.sw[pno]
 *~
 public/uploads/**/*
-*.orig
-*.rej
 vendor/cache/*
 EOT
 
@@ -152,8 +167,17 @@ run "rvm #{current_ruby}@#{app_name} -S rails g cancan:ability"
 run "rvm #{current_ruby}@#{app_name} -S rails g formtastic:install"
 run "rvm #{current_ruby}@#{app_name} -S rails g rspec:install"
 
-run "rm public/index.html"
+run "git rm public/index.html"
 
-run "git init"
+if Dir.exists?("#{ENV['HOME']}/.pow") && %x{which powder} && $?.success?
+  %x{powder link}
+end
+
 run "git add ."
-run "git commit -m 'init'"
+run "git commit -m 'post-init'"
+username = %x{git config github.user}.strip
+if username
+	run "git remote rm origin"
+	run "git remote add origin git@github.com:#{username}/#{app_name}.git"
+end
+
