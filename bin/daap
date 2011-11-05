@@ -1,0 +1,6 @@
+#!/bin/bash
+dns-sd -R "home_daap" _daap._tcp . 3690 &
+PID1=$!
+ssh -N -L *:3690:*:3689 pcsvc
+kill $PID1
+
