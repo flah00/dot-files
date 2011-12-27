@@ -106,7 +106,7 @@ rscreen()
 		echo "Not in a rails project" 1>&2 
 		return 2
 	fi
-	/opt/local/bin/screen -S $session /opt/local/bin/vim
+	screen -S $session vim
 }
 
 bundlecd()
