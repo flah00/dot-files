@@ -2,8 +2,8 @@
 	name = Philip Champon
 	email = philip@adaptly.com
 [core]
-	editor = /opt/local/bin/vim
-	excludesfile = /Users/flah/.gitignore_global
+	editor = vim
+	excludesfile = /Users/pchampon/.gitignore_global
   autocrlf = false
 [merge]
 	tool = vimdiff
@@ -23,4 +23,4 @@
 [github]
 	user = flah00
 [merge "vimdiff"]
-	path = /opt/local/bin/vimdiff
+	path = vimdiff
