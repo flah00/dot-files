@@ -52,53 +52,6 @@ set_ps1()
 export PROMPT_COMMAND='PS1="$(set_ps1)"'
 #export PROMPT_COMMAND='PS1="${c_user}\h${c_reset}:${c_path}\w${c_reset}$(set_ps1)\$ "'
 
-m()
-{
-	echo "$*"
-	eval $*
-}
-
-mongo_shell()
-{
-  type heroku >/dev/null 2>&1
-  has_heroku=$([ $? -eq 0 ] && echo 1 || echo 0)
-
-  if [ ${1:+set} ]; then 
-    url=$1
-  elif [ ${MONGOHQ_URL:+set} ]; then
-    url="$MONGOHQ_URL"
-  elif [ -d app ] && [ $has_heroku -eq 1 ]; then
-		if [ `basename $PWD` = 'insightful' ]; then
-			url=$(heroku config --long --app adaptly-insightful | grep MONGOHQ_URL | awk '{print$3}')
-		else
-    	url=$(heroku config --long --app `pwd -P | sed 's,.*/,,'`|grep MONGOHQ_URL | awk '{print$3}')
-		fi
-  else
-		url=$( printf "mongodb://localhost:27017/%s"  `rails runner 'puts "#{Rails.root.basename.to_s}_#{Rails.env}"' |tail -1`)
-    #echo "Missing mongodb url" 1>&2
-    #return 1
-  fi
-
-	echo using mongo url $url
-  set -- $(ruby -r uri -e 'u=URI.parse(ARGV[0])
-    puts u.host||"localhost"
-    puts u.port||27017
-    puts u.path||"/adaptly_development"
-    puts u.user
-    puts u.password' $url)
-  if [ ! -z $4 ] && [ ! -z $5 ]; then
-    m mongo $1:$2$3 -u "$4" -p "$5"
-  elif [ ! -z $4 ]; then
-    m mongo $1:$2$3 -u "$4" 
-  elif [ ! -z $5 ]; then
-    m mongo $1:$2$3 -p "$5" 
-  else
-    m mongo $1:$2$3
-  fi
-
-  return $?
-}
-
 rscreen()
 {
 	session=${1:?Missing session}
@@ -114,8 +67,4 @@ bundlecd()
   cd $(bundle show $*)
 }
 
-function gemcd
-{
-  cd $(dirname `gem which $*`)
-}
 # vim:ft=sh
