@@ -1,6 +1,3 @@
-[submodule "modules/git-flow-completion"]
-	path = modules/git-flow-completion
-	url = https://github.com/bobthecow/git-flow-completion.git
 [submodule "modules/heroku_bash_completion"]
 	path = modules/heroku_bash_completion
 	url = https://github.com/rafmagana/heroku_bash_completion.git

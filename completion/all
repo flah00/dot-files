@@ -1,7 +1,4 @@
 path=$(dirname ${BASH_ARGV[0]})
 [[ -f $path/completion-ruby-all ]] && . $path/completion-ruby-all
 
-[[ -f $path/heroku_bash_completion.sh ]] && . $path/heroku_bash_completion.sh
-
-[[ -f $path/git-flow-completion.bash ]] && . $path/git-flow-completion.bash
 # vim:ft=sh:
