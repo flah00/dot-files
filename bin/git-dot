@@ -1,0 +1,2 @@
+#!/bin/bash
+git commit -m $(ruby -e 'puts %q{.} * ARGV[0].to_i' ${1:-1})
