@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 find . \( -name modules -o -name .git -o -name completion \) -prune -o -name .[a-z]\* -print | cpio -dpm ~
 cp -rp bin ~
 cp rbenv/install/* /usr/local/share/ruby-build
