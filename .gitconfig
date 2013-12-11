@@ -1,10 +1,10 @@
 [user]
 	name = Philip Champon
-	email = philip@adaptly.com
+	email = pchampon@gmail.com
 [core]
 	editor = vim
-	excludesfile = /Users/pchampon/.gitignore_global
-  autocrlf = false
+	excludesfile = /home/flah/.gitignore_global
+	autocrlf = false
 [merge]
 	tool = vimdiff
 [color]
@@ -24,3 +24,5 @@
 	user = flah00
 [merge "vimdiff"]
 	path = vimdiff
+[push]
+	default = current
