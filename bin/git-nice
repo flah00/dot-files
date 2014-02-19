@@ -1,0 +1,5 @@
+#!/bin/bash
+set -e
+git checkout master
+git pull
+git branch-scrub
