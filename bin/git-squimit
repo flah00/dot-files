@@ -1,11 +1,13 @@
 #!/bin/bash
 set -e
+set -x
 current=`git rev-parse HEAD`
 master=`git rev-parse master`
 [ $current = $master ] && echo "Will not run on master" &&  exit 1
 
-revs=`git cherry -v origin/master | wc -l | sed 's/[^0-9]//'`
-prev_commit=`git short-log -1 HEAD | sed 's/^[^ ]* //'`
+revs=`git cherry -v origin/master | wc -l | sed 's/[^0-9]//g'`
+revs=$((revs+1))
+prev_commit=`git short-log -1 HEAD | sed 's/^[^ ]* //g'`
 git add .
 git commit -am "squash! $prev_commit"
 git rebase -i --autosquash HEAD~$revs
