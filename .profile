@@ -11,7 +11,6 @@ fi
 export LANG='en_US.UTF-8'
 export CDPATH=".:~/devel/adaptly"
 export HTML_TIDY=~/.tidyrc
-export SCREENDIR=$HOME/.screens
 export HISTCONTROL="erasedups:ignorespace"
 export CLICOLOR=1
 #export LSCOLORS="Dxfxcxdxbxegedabagacad"
