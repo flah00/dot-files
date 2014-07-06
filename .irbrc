@@ -1,4 +1,5 @@
 require 'pp'
+require 'irb/completion'
 load File.expand_path("~/.irbrc_adaptly")
 
 # IRB will now know your window size changed...

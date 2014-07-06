@@ -10,10 +10,10 @@ type aws &>/dev/null && complete -C /usr/local/aws/bin/aws_completer west
 
 case ${UNAMES:-} in
 Linux)
-	alias ls='ls --color=auto'
-	;;
+  alias ls='ls --color=auto'
+  ;;
 Darwin|*[Bb][Ss][Dd]*)
-	alias top="top -o cpu -O rsize"
-	;;
+  alias top="top -o cpu -O rsize"
+  ;;
 esac
 # vim:ft=sh:
