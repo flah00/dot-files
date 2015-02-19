@@ -1,4 +1,0 @@
-path=$(dirname ${BASH_ARGV[0]})
-[[ -f $path/completion-ruby-all ]] && . $path/completion-ruby-all
-
-# vim:ft=sh:

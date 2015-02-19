@@ -2,8 +2,9 @@
 set -x
 find . \( -name modules -o -name .git -o -name completion \) -prune -o -name .[a-z]\* -print | cpio -dpm ~
 cp -rp bin ~
-cp rbenv/install/* /usr/local/share/ruby-build
-cp modules/git-flow-completion/git-flow-completion.bash ~/.completion/
-cp modules/completion-ruby/completion-* ~/.completion
-cp modules/heroku_bash_completion/heroku_bash_completion.sh ~/.completion
-cp completion/all ~/.completion/
+if [ -d /etc/bash_completion.d ]; then
+  cp completion/postgresql /etc/bash_completion.d
+else if [ -d /usr/local/etc/bash_completion.d ]; then
+  cp completion/postgresql /usr/local/etc/bash_completion.d
+fi
+

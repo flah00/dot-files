@@ -56,6 +56,11 @@ _pg_users()
     [ ${#COMPREPLY[@]} -eq 0 ] && COMPREPLY=( $( compgen -u -- "$cur" ) )
 }
 
+_pg_formats()
+{
+    COMPREPLY=( $(compgen -W 'c d p t') )
+}
+
 # createdb(1) completion
 #
 _createdb()
@@ -191,6 +196,200 @@ _psql()
     fi
 }
 complete -F _psql psql
+
+# pg_restore(1) completion
+#
+_pg_restore()
+{
+    local cur prev split=false
+
+    COMPREPLY=()
+    _get_comp_words_by_ref cur prev
+
+    _split_longopt && split=true
+
+    case $prev in
+        -h|--host)
+            _pg_hosts
+            return 0
+            ;;
+        -U|--username)
+            _pg_users
+            return 0
+            ;;
+        -d|--dbname)
+            _pg_databases
+            return 0
+            ;;
+        -f|--file)
+            _filedir
+            return 0
+            ;;
+        -F|--format)
+            _pg_formats
+            return 0
+            ;;
+        -L|--use-list)
+            _filedir
+            return 0
+            ;;
+        -l|--list|\
+        -a|--clean|\
+        -C|--create|\
+        -e|--exit-on-error|\
+        -I|--index-name|\
+        -j|--jobs|\
+        -n|--schema|\
+        -O|--no-owner|\
+        -P|--function|\
+        -p|--port|\
+        -s|--schema-only|\
+        -S|--superuser|\
+        -T|--trigger|\
+        -x|--no-privileges|\
+        --disable-triggers|\
+        --use-set-session-authorization|\
+        --role|\
+        -w|--no-password|\
+        -W|--password|\
+        -v|--verbose|\
+        -V|--version|\
+        -\?|--help)
+            # argument required but no completions available
+            return 0
+            ;;
+    esac
+
+    $split && return 0
+
+    if [[ "$cur" == -* ]]; then
+        # return list of available options
+        COMPREPLY=( $( compgen -W '--list --clean --create --exit-on-error \
+            --index-name --jobs --schema --no-owner \
+            --function --port --schema-only \
+            --superuser --trigger --no-privileges \
+            --no-password --password --verbose \
+            --version --help --disable-triggers \
+            --use-set-session-authorization --role' \
+            -- "$cur" ) )
+
+    else
+        # return list of files
+        _filedir
+    fi
+}
+complete -F _pg_restore pg_restore
+
+# pg_dump(1) completion
+#
+_pg_dump()
+{
+    local cur prev split=false
+
+    COMPREPLY=()
+    _get_comp_words_by_ref cur prev
+
+    _split_longopt && split=true
+
+    case $prev in
+        -h|--host)
+            _pg_hosts
+            return 0
+            ;;
+        -U|--username)
+            _pg_users
+            return 0
+            ;;
+        -d|--dbname)
+            _pg_databases
+            return 0
+            ;;
+        -f|--file)
+            _filedir
+            return 0
+            ;;
+        -F|--format)
+            _pg_formats
+            return 0
+            ;;
+        -L|--use-list)
+            _filedir
+            return 0
+            ;;
+        -Z|--compress)
+            COMPREPLY=($(compgen -W '0 1 2 3 4 5 6 7 8 9'))
+            return 0
+            ;;
+
+        -a|--data-only|\
+        -b|--blobs|\
+        -c|--clean|\
+        -C|--create|\
+        -E|--encoding|\
+        -e|--exit-on-error|\
+        -j|--jobs|\
+        -n|--schema|\
+        -N|--exclude-schema|\
+        -o|--oids|\
+        -O|--no-owner|\
+        -p|--port|\
+        -s|--schema-only|\
+        -S|--superuser|\
+        -t|--table|\
+        -T|--exclude-table|\
+        -x|--no-privileges|\
+        -w|--no-password|\
+        -W|--password|\
+        -v|--verbose|\
+        -V|--version|\
+        -\?|--help|\
+        --role|\
+        --binary-upgrade|\
+        --column-inserts|\
+        --disable-dollar-quoting|\
+        --disable-triggers|\
+        --exclude-table-data|\
+        --inserts|\
+        --no-security-labels|\
+        --no-synchronized-snapshots|\
+        --no-tablespaces|\
+        --no-unlogged-table-data|\
+        --quote-all-identifiers|\
+        --section|\
+        --serializable-deferrable|\
+        --use-set-session-authorization)
+
+            # argument required but no completions available
+            return 0
+            ;;
+    esac
+
+    $split && return 0
+
+    if [[ "$cur" == -* ]]; then
+        # return list of available options
+        COMPREPLY=( $( compgen -W '--data-only --blobs --clean --create \
+            --encoding --exit-on-error --jobs \
+            --schema --exclude-schema --oids \
+            --no-owner --port --schema-only \
+            --superuser --table --exclude-table \
+            --no-privileges --no-password --password \
+            --verbose --version --help \
+            --role --binary-upgrade --column-inserts \
+            --disable-dollar-quoting --disable-triggers \
+            --exclude-table-data --inserts \
+            --no-security-labels --no-synchronized-snapshots \
+            --no-tablespaces --no-unlogged-table-data \
+            --quote-all-identifiers --section \
+            --serializable-deferrable --use-set-session-authorization' \
+            -- "$cur" ) )
+    else
+        # return list of files
+        _pg_databases
+    fi
+}
+complete -F _pg_dump pg_dump
+
 }
 
 # Local variables:
