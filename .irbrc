@@ -1,6 +1,6 @@
-require 'pp'
-require 'irb/completion'
-load File.expand_path("~/.irbrc_adaptly")
+#require 'pp'
+#require 'irb/completion'
+#load File.expand_path("~/.irbrc_adaptly")
 
 # IRB will now know your window size changed...
 #$: << Dir["#{ENV['GEM_HOME'].sub(/(@[^\/]+|$)/,'@global')}/gems/ruby-terminfo*/lib"].last if ! Object.const_defined? "TermInfo"

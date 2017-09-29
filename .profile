@@ -1,15 +1,10 @@
-export PATH=/usr/local/bin:/usr/local/sbin:$PATH
+#export PATH=/usr/local/bin:/usr/local/sbin:$PATH
 export ENV=~/.bashrc
-if [ -e $ENV ]; then
-	. $ENV
-fi
-if [ -d ~/bin ]; then
-	export PATH=$PATH:~/bin
-fi
-
-[ $TERM = "xterm" -o $TERM = "xterm-color" ] && export TERM="xterm-256color"
+[ -e $ENV ] && . $ENV || :
+[ -d ~/bin ] && export PATH=$PATH:~/bin || :
+#[ $TERM = "xterm" -o $TERM = "xterm-color" ] && export TERM="xterm-256color"
 export LANG='en_US.UTF-8'
-export CDPATH=".:~/devel/adaptly"
+export CDPATH=".:~/devel"
 export HTML_TIDY=~/.tidyrc
 export HISTCONTROL="erasedups:ignorespace"
 export CLICOLOR=1
