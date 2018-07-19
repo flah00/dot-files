@@ -3,7 +3,7 @@
 	email = pchampon@gmail.com
 [core]
 	editor = vim
-	excludesfile = /home/flah/.gitignore_global
+	excludesfile = /home/flah00/.gitignore_global
 	autocrlf = false
 [merge]
 	tool = vimdiff

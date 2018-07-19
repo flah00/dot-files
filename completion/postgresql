@@ -1,6 +1,6 @@
 # bash completion for Postgresql
 
-have psql && {
+{
 _pg_databases()
 {
     local pgpass
@@ -100,7 +100,7 @@ _createdb()
     else
         _pg_databases
     fi
-}
+} &&
 complete -F _createdb -o default createdb
 
 # dropdb(1) completion
@@ -137,7 +137,7 @@ _dropdb()
     else
         _pg_databases
     fi
-}
+} &&
 complete -F _dropdb -o default dropdb
 
 # psql(1) completion
@@ -194,7 +194,7 @@ _psql()
         # return list of available databases
         _pg_databases
     fi
-}
+} &&
 complete -F _psql psql
 
 # pg_restore(1) completion
@@ -277,7 +277,7 @@ _pg_restore()
         # return list of files
         _filedir
     fi
-}
+} && 
 complete -F _pg_restore pg_restore
 
 # pg_dump(1) completion
@@ -387,10 +387,9 @@ _pg_dump()
         # return list of files
         _pg_databases
     fi
-}
+} &&
 complete -F _pg_dump pg_dump
 
-}
 
 # Local variables:
 # mode: shell-script
