@@ -58,8 +58,11 @@ done
 
 if [[ $cluster_context ]]; then
   if ! kubectl config use-context $cluster_context &>/dev/null; then
-    echo ERROR kubectl context $cluster_context does not exist 1>&2
-    exit 1
+    echo WARN kubectl context $cluster_context does not exist 1>&2
+    echo aks-get-credentials.sh -i $cluster_context 1>&2
+    # AZEUKS-I-5429-IDVS-Cluster1 -> 5429
+    id=$(echo $cluster_context | sed -E 's/[^0-9]*([0-9]{4,})[^0-9]*/\1/')
+    aks-get-credentials.sh -i $id || exit 3
   fi
 fi
 
@@ -177,11 +180,11 @@ cur_version=$(helm ls -n twistlock --filter ^twistlock-defender-ds | awk '{print
 cur_version=${cur_version##*-}
 echo -e DEPLOYING ./twistlock-defender-helm.tar.gz
 [[ $cur_version ]] && echo -e "\tcurrent version: $cur_version" || echo -e "\tcurrent version: NOT INSTALLED"
-echo "\tnew $chart_version"
+echo -e "\tnew $chart_version"
 echo CLUSTER CONTEXT $(kubectl config current-context)
 echo CLUSTER NAME ${cluster_name}
 confirm $confirmed
-if [[ $action = uninstall ]]; then
+if [[ $helm_action = uninstall ]]; then
   set -x
   exec helm uninstall twistlock-defender-ds --namespace twistlock
 else

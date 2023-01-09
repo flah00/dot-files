@@ -20,7 +20,7 @@ function usage() {
   echo -e "\t${0##*/} -c AZEUDKS-I-5524-CACT-Cluster -r I-5524-CommandAndControlTower-RG"
   exit 1
 }
-while getopts i:c:r:s:a arg; do
+while getopts i:c:r:s:ah arg; do
   case $arg in
     i) id=$OPTARG ;;
     c) cn=$OPTARG ;;
