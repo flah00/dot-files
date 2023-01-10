@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+# Multiple clusters in RG
+# Check for powered on state, before trying anything
+# Add -y to -all
+# --admin for get-credentials
+# fix cluster names
 
 # Usage description in getopts section
 #
@@ -72,17 +77,17 @@ if [[ $helm_action = uninstall_caas2 ]]; then
   confirm $confirmed
   ex=0
   set -x
-  kubectl delete clusterrolebinding twistlock-view-binding
+  kubectl --request-timeout=3s delete clusterrolebinding twistlock-view-binding
   ex+=$?
-  kubectl delete clusterrole twistlock-view
+  kubectl --request-timeout=3s delete clusterrole twistlock-view
   ex+=$?
-  kubectl -n twistlock delete secrets twistlock-secrets
+  kubectl --request-timeout=3s -n twistlock delete secrets twistlock-secrets
   ex+=$?
-  kubectl -n twistlock delete sa twistlock-service
+  kubectl --request-timeout=3s -n twistlock delete sa twistlock-service
   ex+=$?
-  kubectl -n twistlock delete service defender
+  kubectl --request-timeout=3s -n twistlock delete service defender
   ex+=$?
-  kubectl -n twistlock delete ds twistlock-defender-ds 
+  kubectl --request-timeout=3s -n twistlock delete ds twistlock-defender-ds 
   ex+=$?
   set +x
   if [[ $ex -ne 0 ]]; then
@@ -174,6 +179,7 @@ if ! helm lint ./twistlock-defender-helm.tar.gz &> /tmp/out; then
 else
   rm -f /tmp/out
 fi
+
 chart_version=$(helm show chart ./twistlock-defender-helm.tar.gz | grep ^version:)
 cur_version=$(helm ls -n twistlock --filter ^twistlock-defender-ds | awk '{print$9}')
 # chart-name-0.1.2 -> 0.1.2
@@ -184,6 +190,7 @@ echo -e "\tnew $chart_version"
 echo CLUSTER CONTEXT $(kubectl config current-context)
 echo CLUSTER NAME ${cluster_name}
 confirm $confirmed
+
 if [[ $helm_action = uninstall ]]; then
   set -x
   exec helm uninstall twistlock-defender-ds --namespace twistlock

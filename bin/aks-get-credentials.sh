@@ -77,6 +77,6 @@ fi
 
 let "n=${#clusters[@]}-1"
 for i in $(seq 0 $n); do
-  echo az aks get-credentials --resource-group ${resources[$i]} --name ${clusters[$i]}
-  az aks get-credentials --resource-group ${resources[$i]} --name ${clusters[$i]}
+  echo az aks get-credentials --resource-group ${resources[$i]} --name ${clusters[$i]} --admin
+  az aks get-credentials --resource-group ${resources[$i]} --name ${clusters[$i]} --admin
 done

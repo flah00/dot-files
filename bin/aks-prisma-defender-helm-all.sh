@@ -10,13 +10,15 @@ function usage() {
   echo "${0##*/} -a ACTION [-s SUB]"
   echo -e "\t-a ACTION install, upgrade, uninstall, uninstall_caas2"
   echo -e "\t-s SUB    Azure subscription (default $sub)"
+  echo -e "\t-y        Yes to all prompts"
   exit 1
 }
 
-while getopts a:s:h arg; do
+while getopts a:s:hy arg; do
   case $arg in
     a) action=$OPTARG ;;
     s) sub=$OPTARG ;;
+    y) yes=-y ;;
     *) usage ;;
   esac
 done
@@ -30,11 +32,13 @@ az account set --subscription $sub
 az aks list --query '[].{cn:name, rg:resourceGroup}' >$tmp 
 set +x
 clusters=($(jq -r '.[].cn' $tmp))
+
 for cluster in ${clusters[@]}; do
   # AZEUKS-I-5429-IDVS-Cluster1 -> 5429
   id=$(echo $cluster | sed -E 's/[^0-9]*([0-9]{4,})[^0-9]*/\1/')
   cluster_short=$(echo $cluster | sed 's/-cluster$//i')
   cluster_short=${cluster:0:20}
+
   echo === $cluster short $cluster_short id $id begin ===
   if ! kubectl config get-contexts | grep -q $cluster; then
     set -x; aks-get-credentials.sh -i $id; set +x
@@ -43,7 +47,7 @@ for cluster in ${clusters[@]}; do
       continue
     fi
   fi
-  set -x; prisma-defender-helm.sh -a $action -c $cluster -n $cluster_short; set +x
+  set -x; prisma-defender-helm.sh $yes -a $action -c $cluster -n $cluster_short; set +x
   echo
   echo === $cluster id $id end ===
 done
