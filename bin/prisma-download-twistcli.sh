@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
 console=us-east1.cloud.twistlock.com/us-2-158262739
 
-while getopts u:ydh arg; do
+while getopts u:dh arg; do
   case $arg in
     u) console=$OPTARG ;;
-    y) confirmed=true ;;
     d) downloaded=true ;;
     *)
-      echo ${0##*/} [-u URL] [-y] [-d]
+      echo ${0##*/} [-u URL] [-d]
       echo -e "\t-u URL The prisma console URL (default $console)"
-      echo -e "\t-y Do not confirm config options before running helm"
       echo -e "\t-d Do not download the helm chart, use the existing file ./twistlock-defender-helm.tar.gz"
+      exit 1
       ;;
   esac
 done
@@ -61,14 +60,29 @@ else
   token=${token##*token\":\"}
   token=${token%%\"\}}
   
-  curl -k -O -q -L --header "Authorization: Bearer $token" https://$console/api/v1/util/twistcli
+  echo Fetching twistcli...
+  curl -kOqL \
+    --silent \
+    --header "Authorization: Bearer $token" \
+    https://$console/api/v1/util/twistcli
+
+  # If we get back non-binary data something went wrong...
+  if head -1 twistcli | grep -qi '"err"'; then
+    echo -e "ERROR $(cat twistcli)\n" 1>&2
+    rm twistcli
+    exit 1
+  fi
+
   chmod +x twistcli
 fi
 
 old=$(/opt/prisma/bin/twistcli --version 2>/dev/null) 
 old=${old:-NOT INSTALLED}
 new=$(./twistcli --version) 
-if [[ $old != $new ]]; then
+if [[ ! $new ]]; then
+  echo ERROR execution of ./twistcli failed, aborting
+  exit 2
+elif [[ $old != $new ]]; then
   echo "updating twistcli from '$old' to '$new'"
   set -x
   sudo mkdir -p /opt/prisma/bin
@@ -77,3 +91,4 @@ else
   echo twistcli up to date
   rm -f twistcli 
 fi
+
