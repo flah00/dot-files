@@ -30,6 +30,7 @@ while getopts i:c:r:s:ah arg; do
     *) usage ;;
   esac
 done
+
 stat=$(stat -c '%Z' ~/.azure/az.sess)
 now=$(date +%s)
 ## session file written to more than 12h ago
@@ -48,6 +49,7 @@ if [[ $all ]]; then
     echo Found "resources '${resources[@]}'"
     exit 1
   fi
+
 elif [[ $id ]]; then
   echo Searching for id $id in $sub
   set -x; az aks list --query '[].{cn:name, rg:resourceGroup}' >$tmp ; set +x
@@ -60,6 +62,7 @@ elif [[ $id ]]; then
     echo Found "resource '${resources[@]}' ${#resources[@]}"
     exit 1
   fi
+
 elif [[ $cn && $rg ]]; then
   echo Configuring cluster $cn with resrouce group $rg in $sub
   clusters=($cn)
@@ -70,6 +73,7 @@ elif [[ $cn && $rg ]]; then
     echo Found "resource '${resources[@]}' ${#resources[@]}"
     exit 1
   fi
+
 else
   echo must declare -a or -i or -c AND -r
   usage

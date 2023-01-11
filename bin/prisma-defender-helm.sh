@@ -129,6 +129,11 @@ else
   if [[ -r ~philip.champon/.prisma ]]; then
     access_key_id=$(head -1 ~philip.champon/.prisma | sed 's/[^,]*,//')
     secret_key=$(tail -1 ~philip.champon/.prisma | sed 's/[^,]*,//')
+
+  elif [[ -r ~/.prisma ]]; then
+    access_key_id=$(head -1 ~/.prisma | sed 's/[^,]*,//')
+    secret_key=$(tail -1 ~/.prisma | sed 's/[^,]*,//')
+
   else
     echo The prisma access key and secret are required to ${helm_action} cluster ${cluster_name}
     echo -n 'Access Key ID: '

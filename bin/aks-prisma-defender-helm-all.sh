@@ -40,14 +40,7 @@ for cluster in ${clusters[@]}; do
   cluster_short=${cluster:0:20}
 
   echo === $cluster short $cluster_short id $id begin ===
-  if ! kubectl config get-contexts | grep -q $cluster; then
-    set -x; aks-get-credentials.sh -i $id; set +x
-    if [[ $? -ne 0 ]]; then
-      echo Skipping $cluster, failed to fetch kubectl credentials
-      continue
-    fi
-  fi
-  set -x; prisma-defender-helm.sh $yes -a $action -c $cluster -n $cluster_short; set +x
+  set -x; prisma-defender-helm.sh $yes -a $action -c $cluster-admin -n $cluster_short; set +x
   echo
   echo === $cluster id $id end ===
 done
