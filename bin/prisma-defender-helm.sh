@@ -35,7 +35,9 @@ function confirm() {
 
 # POV instance: CAAS2 us-west1.cloud.twistlock.com/us-4-161028402
 # production instance: APP2
-console=us-east1.cloud.twistlock.com/us-2-158262739
+console=us-east1.cloud.twistlock.com
+console_port=443
+console_path=/us-2-158262739
 if [[ -e ~/.azure && -e ~/.aws ]] || [[ -e ~/.azure && $(type gcloud &>/dev/null) ]] || [[ -e ~/.aws && $(type gcloud &>/dev/null) ]]; then
   :
 elif [[ -e ~/.azure ]]; then
@@ -45,24 +47,30 @@ elif [[ -e ~/.aws ]]; then
 elif [[ $(type gcloud &>/dev/null) ]]; then
   cloud=google
 fi
-while getopts 'a:n:c:C:u:hyd' arg; do
+while getopts 'a:n:c:C:u:p:P:hydD' arg; do
   case $arg in
+    D) helm_action=download ;;
     a) helm_action=$OPTARG ;;
     n) cluster_name=$OPTARG ;;
     c) cluster_context=$OPTARG ;;
     C) cloud=$OPTARG ;;
-    u) console=$OPTARG ;;
     y) confirmed=true ;;
     d) downloaded=true ;;
+    u) console=$OPTARG ;;
+    p) console_path=$OPTARG ;;
+    P) console_port=$OPTARG ;;
     *)
       echo ${0##*/} -a HELM_ACTION -n CLUSTER_NAME [-c CLUSTER_CONTEXT] [-u URL] [-y] [-d]
-      echo -e "\t-a HELM_ACTION status, install, upgrade, or uninstall_caas2"
+      echo -e "\t-a HELM_ACTION download, install, upgrade, status, pods, uninstall_caas2"
       echo -e "\t-n CLUSTER_NAME The prisma name of the cluster (<= 20 char)"
       echo -e "\t-c CLUSTER_CONTEXT kubectl context helm uses (default is current context)"
       echo -e "\t-C Cloud platform azure, google, aws (default $cloud)"
       echo -e "\t-u URL The prisma console URL (default $console)"
       echo -e "\t-y Do not confirm config options before running helm"
       echo -e "\t-d Do not download the helm chart, use the existing file ./twistlock-defender-helm.tar.gz"
+      echo -e "\t-D Download the chart, do not run helm"
+      echo -e "\t-p PATH The Prisma console path prefix (default $console_path)"
+      echo -e "\t-P PORT The Prisma console port (default $console_port)"
       exit
       ;;
   esac
@@ -83,8 +91,8 @@ if [[ $cluster_context ]]; then
         gke-get-credentials.sh -i $id || exit 3
         ;;
       aws)
-        echo ERROR $cloud not configured 1>&2
-        exit 2
+        echo + eks-get-credentials.sh -i $id
+        eks-get-credentials.sh -i $id || exit 3
         ;;
       *)
         echo ERROR $cloud not configured 1>&2
@@ -101,6 +109,7 @@ fi
 
 case $helm_action in
   uninstall)
+    confirm $confirmed
     set -x; exec helm uninstall twistlock-defender-ds --namespace twistlock
     ;;
 
@@ -113,35 +122,31 @@ case $helm_action in
     ;;
 
   uninstall_caas2)
-    # special action, which does not use helm...
-    if [[ $helm_action = uninstall_caas2 ]]; then
-      echo Delete proof of concept prisma defender from cluster $(kubectl config current-context)
-      confirm $confirmed
-      ex=0
-      set -x
-      kubectl --request-timeout=3s delete clusterrolebinding twistlock-view-binding
-      ex+=$?
-      kubectl --request-timeout=3s delete clusterrole twistlock-view
-      ex+=$?
-      kubectl --request-timeout=3s delete ns twistlock
-      ex+=$?
-      set +x
-      if [[ $ex -ne 0 ]]; then
-        echo Errors encountered, not waiting for pods to terminate 2>&1
-      else
-        echo -n Waiting for pods to terminate
-        while [[ $(kubectl -n twistlock get po|wc -l) -gt 1 ]]; do 
-          sleep 1
-          echo -n .
-        done
-        echo
-      fi
-      exit $ex
+    echo Delete proof of concept prisma defender from cluster $(kubectl config current-context)
+    confirm $confirmed
+    declare -i ex=0
+    set -x
+    kubectl --request-timeout=3s delete clusterrolebinding twistlock-view-binding
+    ex+=$?
+    kubectl --request-timeout=3s delete clusterrole twistlock-view
+    ex+=$?
+    kubectl --request-timeout=3s delete ns twistlock
+    ex+=$?
+    set +x
+    if [[ $ex -ne 0 ]]; then
+      echo Errors encountered, not waiting for pods to terminate 2>&1
+    else
+      echo -n Waiting for pods to terminate
+      while [[ $(kubectl -n twistlock get po|wc -l) -gt 1 ]]; do 
+        sleep 1
+        echo -n .
+      done
+      echo
     fi
+    exit $ex
     ;;
 
-  # install or upgrade
-  *)
+  install|upgrade|download)
     if [[ ! $cluster_name ]]; then
       echo "The -n flag is required" 1>&2
       exit 2
@@ -185,7 +190,7 @@ case $helm_action in
         -H "Content-Type: application/json" \
         -X POST \
         -d '{"username":"'$access_key_id'", "password":"'$secret_key'"}' \
-        https://$console/api/v1/authenticate)
+        https://$console$console_path/api/v1/authenticate)
 
       if [[ $token =~ ^\{\"err ]]; then
         echo -e "ERROR echo $token\n" 1>&2
@@ -202,8 +207,8 @@ case $helm_action in
         -H "Authorization: Bearer $token" \
         -X POST \
         -O \
-        -d '{ "orchestration": "container", "consoleAddr": "'$console'", "namespace": "twistlock", "cluster": "'$cluster_name'", "cri": true, "uniqueHostname": true }' \
-        https://$console/api/v1/defenders/helm/twistlock-defender-helm.tar.gz
+        -d '{ "orchestration": "kubernetes", "consoleAddr": "'$console:$console_port'", "namespace": "twistlock", "cluster": "'$cluster_name'", "cri": true, "uniqueHostname": true, "serviceAccounts": true }' \
+        https://$console$console_path/api/v1/defenders/helm/twistlock-defender-helm.tar.gz
 
       # If we get back non-binary data something went wrong...
       if head -1 twistlock-defender-helm.tar.gz | grep -qi '"err"'; then
@@ -225,18 +230,30 @@ case $helm_action in
     cur_version=$(helm ls -n twistlock --filter ^twistlock-defender-ds | awk '{print$9}')
     # chart-name-0.1.2 -> 0.1.2
     cur_version=${cur_version##*-}
-    echo -e DEPLOYING ./twistlock-defender-helm.tar.gz
     [[ $cur_version ]] && echo -e "\tcurrent version: $cur_version" || echo -e "\tcurrent version: NOT INSTALLED"
     echo -e "\tnew $chart_version"
     echo CLUSTER CONTEXT $(kubectl config current-context)
     echo CLUSTER NAME ${cluster_name}
+    [[ $helm_action = download ]] && echo "Downloaded twistlock-defender-helm.tar.gz, exiting" && exit 0
     confirm $confirmed
-    set -x
-    exec helm $helm_action twistlock-defender-ds ./twistlock-defender-helm.tar.gz \
+    echo + helm $helm_action twistlock-defender-ds ./twistlock-defender-helm.tar.gz \
       --namespace twistlock \
       --create-namespace \
       --atomic \
-      --timeout=10m
+      --timeout=2m
+    helm $helm_action twistlock-defender-ds ./twistlock-defender-helm.tar.gz \
+      --namespace twistlock \
+      --create-namespace \
+      --atomic \
+      --timeout=2m
+    ex=$?
+    rm -f twistlock-defender-helm.tar.gz
+    exit $ex
+    ;;
+
+  *)
+    echo "ERROR Helm action '$helm_action' undefined" 1>&2
+    exit 2
     ;;
 esac
 

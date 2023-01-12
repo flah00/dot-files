@@ -36,7 +36,7 @@ done
 #fi
 
 if [[ $all ]]; then 
-  echo Preparing to fetch all kubectl configs for $sub
+  echo Preparing to fetch all kubectl configs for $project
   set -x; gcloud container clusters list --format=json >$tmp ; set +x
   # select all of the cluster names and zones
   clusters=($(jq -r '.[].name' $tmp))
@@ -49,13 +49,13 @@ if [[ $all ]]; then
   fi
 
 elif [[ $id ]]; then
-  echo Searching for id $id in $sub
+  echo Searching for id $id in $project
   set -x; gcloud container clusters list --format=json >$tmp ; set +x
   # only select the cluster and zones that matches the id
   clusters=($(jq -r '.[] | select(.name |contains("'$id'")) | .name' $tmp))
   zones=($(jq -r '.[] | select(.name |contains("'$id'")) | .zone' $tmp))
   if [[ ${#clusters[@]} -ne ${#zones[@]} || ! ${clusters[0]} || ! ${zones[0]} ]]; then
-    echo Missing one or both from az aks list
+    echo Missing one or both from gcloud container clusters list
     echo Found "cluster '${clusters[@]}' ${#clusters[@]}"
     echo Found "zones '${zones[@]}' ${#zones[@]}"
     exit 1
@@ -66,7 +66,7 @@ elif [[ $cn && $zn ]]; then
   clusters=($cn)
   zones=($zn)
   if [[ ${#clusters[@]} -ne ${#zones[@]} || ! ${clusters[0]} || ! ${zones[0]} ]]; then
-    echo Missing one or both from az aks list
+    echo Missing one or both from gcloud container clusters list
     echo Found "cluster '${clusters[@]}' ${#clusters[@]}"
     echo Found "zone '${zones[@]}' ${#zones[@]}"
     exit 1

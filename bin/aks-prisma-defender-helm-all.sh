@@ -8,7 +8,7 @@ trap 'rm -f $tmp' EXIT
 trap 'exit 1' TERM INT
 function usage() {
   echo "${0##*/} -a ACTION [-s SUB] [-m PATTERN]"
-  echo -e "\t-a ACTION  install, upgrade, uninstall, uninstall_caas2"
+  echo -e "\t-a ACTION  owners, download, install, upgrade, status, pods, uninstall, uninstall_caas2"
   echo -e "\t-m PATTERN Only apply the ACTION to cluster names matching PATTERN"
   echo -e "\t-s SUB     Azure subscription (default $sub)"
   echo -e "\t-y         Yes to all prompts"
@@ -25,13 +25,13 @@ while getopts a:s:m:hy arg; do
   esac
 done
 [[ ! $action ]] && usage
-stat=$(stat -c '%Z' ~/.azure/az.sess)
+[[ $(uname -s) = Darwin ]] && stat=$(stat -f '%m' ~/.azure/az.sess) || stat=$(stat -c '%Z' ~/.azure/az.sess)
 now=$(date +%s)
 ## session file written to more than 12h ago
 [[ $((now-stat)) -gt $((now-43200)) ]] && echo YOU MUST LOGIN && az login
 set -x
 az account set --subscription $sub
-az aks list --query '[].{cn:name, rg:resourceGroup, state:powerState.code}' >$tmp 
+az aks list --query '[].{cn:name, rg:resourceGroup, state:powerState.code, Owners:tags.Owners, owners:tags.owners }' >$tmp 
 set +x
 if [[ $match ]]; then
   clusters=($(jq -r '.[].cn | select(contains("'"$match"'"))' $tmp))
@@ -49,7 +49,13 @@ for cluster in ${clusters[@]}; do
   cluster_short=${cluster:0:20}
 
   echo === $cluster short $cluster_short id $id begin ===
-  if [[ $state = Running ]]; then
+  if [[ $action = owners ]]; then
+    owners=$(jq -r '.[] | select(.cn=="'$cluster'") | .owners' $tmp)
+    if [[ ! $owners ]]; then
+      owners=$(jq -r '.[] | select(.cn=="'$cluster'") | .Owners' $tmp)
+    fi
+    echo Owners $owners
+  elif [[ $state = Running ]]; then
     echo + prisma-defender-helm.sh $yes -a $action -c $cluster-admin -n $cluster_short
     prisma-defender-helm.sh $yes -a $action -c $cluster-admin -n $cluster_short -C azure
     [[ $? -eq 0 ]] && successes+=1 || errors+=1
