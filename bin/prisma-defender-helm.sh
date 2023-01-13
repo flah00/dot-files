@@ -87,11 +87,11 @@ if [[ $cluster_context ]]; then
         aks-get-credentials.sh -i $id || exit 3
         ;;
       google)
-        echo + gke-get-credentials.sh -i $id
+        echo + gke-get-credentials.sh -i $id 1>&2
         gke-get-credentials.sh -i $id || exit 3
         ;;
       aws)
-        echo + eks-get-credentials.sh -i $id
+        echo + eks-get-credentials.sh -i $id 1>&2
         eks-get-credentials.sh -i $id || exit 3
         ;;
       *)
@@ -109,6 +109,12 @@ fi
 
 case $helm_action in
   uninstall)
+    cur_version=$(helm ls -n twistlock --filter ^twistlock-defender-ds | awk '{print$9}')
+    if [[ ! $cur_version ]]; then
+      echo ERROR helm chart twistlock-defender-ds is not installed 1>&2
+      exit 2
+    fi
+    echo UNINSTALL helm chart twistlock-defender-ds version $cur_version from cluster $(kubectl config get-context)
     confirm $confirmed
     set -x; exec helm uninstall twistlock-defender-ds --namespace twistlock
     ;;
@@ -122,6 +128,11 @@ case $helm_action in
     ;;
 
   uninstall_caas2)
+    cur_version=$(helm ls -n twistlock --filter ^twistlock-defender-ds | awk '{print$9}')
+    if [[ $cur_version ]]; then
+      echo ERROR helm was used to install defender, use action uninstall 1>&2
+      exit 2
+    fi
     echo Delete proof of concept prisma defender from cluster $(kubectl config current-context)
     confirm $confirmed
     declare -i ex=0
