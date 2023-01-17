@@ -15,8 +15,8 @@ function usage() {
   echo -e "\t-y         Yes to all prompts"
   exit 1
 }
-function skip() { skipped+=1; clusters_skip+=($1); }
-function error() { errors+=1; clusters_error+=($1); }
+function skip() { clusters_skip+=($1); }
+function error() { clusters_error+=($1); }
 
 while getopts a:s:m:o:hy arg; do
   case $arg in
@@ -43,11 +43,19 @@ else
   clusters=($(jq -r '.[].cn' $tmp))
 fi
 echo Found ${#clusters[@]}
+if [[ ! -r ~philip.champon/.prisma && ! -r ~/.prisma && ! $yes ]]; then
+  echo WARN .prisma file not found, you will be required to input prisma key and secret ${#clusters[@]} times
+  echo WARN Alternatively, you can generate a key and secret, as a cloud-provisioning-admin in prisma
+  echo WARN https://app2.prismacloud.io/settings/access_control/access_keys and copy the csv to ~/.prisma
+  echo -n "Continue [Y/n] "
+  read accept
+  [[ $accept != "" && ! $accept =~ ^y(es)? ]] && exit 2
+fi
 [[ $action = owner && $csv ]] && echo "Cluster,Id,Prisma Name,Owner" > $csv
 [[ $action = status && $csv ]] && echo "Cluster,Id,Prisma Name,Prisma Chart Version" > $csv
 [[ $action = pods && $csv ]] && echo "Cluster,Id,Prisma Name,Prisma Pod Name,Status" > $csv
 
-declare -i skipped=0 errors=0 successes=0 total=0
+declare -i successes=0 total=0
 delcare -a clusters_skip clusters_error
 TEE=$(mktemp /tmp/${0##*/}XXXX)
 for cluster in ${clusters[@]}; do
@@ -66,13 +74,19 @@ for cluster in ${clusters[@]}; do
       echo -e "\n=== $cluster id $id end ===\n\n"
       continue
     fi
-    kubectl config use-context $cluster-admin || aks-get-credentials.sh -i $id || continue
+    if ! kubectl config use-context $cluster-admin || ! aks-get-credentials.sh -i $id; then
+      echo WARN Skipping cluster $cluster, context not defined
+      skip $cluster
+      echo -e "\n=== $cluster id $id end ===\n\n"
+      continue
+    fi
     nodes=($(kubectl --request-timeout=3s get node -o jsonpath={..name} -l kubernetes.io/os=linux))
     for node in ${nodes[@]}; do
       echo $(tput setaf 1)To access the worker node:$(tput sgr0) $(tput rev)exec chroot /host$(tput sgr0)
       echo + kubectl --request-timeout=3s debug node/$node --image=busybox -ti 1>&2
       kubectl --request-timeout=3s debug node/$node --image=busybox -ti
       [[ $? -eq 0 ]] && successes+=1 || error $cluster
+      #kubectl --request-timeout=3s delete pod -l app=debug
     done
 
   elif [[ $action = owner ]]; then
@@ -107,10 +121,10 @@ for cluster in ${clusters[@]}; do
   echo -e "\n=== $cluster id $id end ===\n\n"
 done
 
-echo Errors: $errors
+echo Errors: ${#clusters_error[@]}
 [[ ${#clusters_error[@]} -gt 0 ]] && echo -e "\t${clusters_error[@]}"
 echo Successes: $successes
-echo Skipped: $skipped
+echo Skipped: ${#clusters_skip[@]}
 [[ ${#clusters_skip[@]} -gt 0 ]] && echo -e "\t${clusters_skip[@]}"
 echo Total: $total
-exit $errors
+exit ${#clusters_error[@]}

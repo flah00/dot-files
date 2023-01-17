@@ -60,17 +60,17 @@ while getopts 'a:n:c:C:u:p:P:hydD' arg; do
     p) console_path=$OPTARG ;;
     P) console_port=$OPTARG ;;
     *)
-      echo ${0##*/} -a HELM_ACTION -n CLUSTER_NAME [-c CLUSTER_CONTEXT] [-u URL] [-y] [-d]
-      echo -e "\t-a HELM_ACTION download, install, upgrade, status, pods, uninstall_caas2"
-      echo -e "\t-n CLUSTER_NAME The prisma name of the cluster (<= 20 char)"
-      echo -e "\t-c CLUSTER_CONTEXT kubectl context helm uses (default is current context)"
-      echo -e "\t-C Cloud platform azure, google, aws (default $cloud)"
-      echo -e "\t-u URL The prisma console URL (default $console)"
-      echo -e "\t-y Do not confirm config options before running helm"
-      echo -e "\t-d Do not download the helm chart, use the existing file ./twistlock-defender-helm.tar.gz"
-      echo -e "\t-D Download the chart, do not run helm"
-      echo -e "\t-p PATH The Prisma console path prefix (default $console_path)"
-      echo -e "\t-P PORT The Prisma console port (default $console_port)"
+      echo ${0##*/} -a ACTION -n NAME [-c CONTEXT] [-y] [-d] [-C CLOUD] [-u URL] [-p PATH] [-P PORT]
+      echo -e "\t-a ACTION  download, install, upgrade, status, pods, uninstall_caas2"
+      echo -e "\t-n NAME    The prisma name of the cluster (<= 20 char)"
+      echo -e "\t-c CONTEXT kubectl context helm uses (default is current context)"
+      echo -e "\t-C CLOUD   Cloud platform azure, google, aws (default $cloud)"
+      echo -e "\t-u URL     The prisma console URL (default $console)"
+      echo -e "\t-p PATH    The Prisma console path prefix (default $console_path)"
+      echo -e "\t-P PORT    The Prisma console port (default $console_port)"
+      echo -e "\t-d         Do not download the helm chart, use the existing file ./twistlock-defender-helm.tar.gz"
+      echo -e "\t-D         Download the chart, do not run helm"
+      echo -e "\t-y         Yes to all prompts"
       exit
       ;;
   esac
