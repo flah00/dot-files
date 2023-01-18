@@ -7,23 +7,30 @@ tmp=/tmp/$$.az.aks.list
 trap 'rm -f $tmp' EXIT
 trap 'exit 1' TERM INT
 function usage() {
-  echo "${0##*/} -a ACTION [-s SUB] [-m PATTERN] [-o PATH] [-y]"
+  echo "${0##*/} -a ACTION [-s SUB] [-m PATTERN] [-o PATH] [-i BOOL] [-y]"
   echo -e "\t-a ACTION  owner, download, install, upgrade, status, pods, uninstall, uninstall_caas2" 
   echo -e "\t-m PATTERN Only apply the ACTION to cluster names matching PATTERN"
   echo -e "\t-s SUB     Azure subscription (default $sub)"
   echo -e "\t-o PATH    Write results to PATH as CSV for owner, status, or pods"
+  echo -e "\t-i BOOL    Enable Prisma CRI true or false (default automatic)"
   echo -e "\t-y         Yes to all prompts"
   exit 1
 }
 function skip() { clusters_skip+=($1); }
 function error() { clusters_error+=($1); }
 
-while getopts a:s:m:o:hy arg; do
+while getopts a:s:m:o:i:hy arg; do
   case $arg in
     a) action=$OPTARG ;;
     s) sub=$OPTARG ;;
     m) match=$OPTARG ;;
     o) csv=$OPTARG ;;
+    i) 
+      case $OPTARG in
+        t|true|y|yes|1) cri=true ;;
+        f|false|n|no|0) cri=false ;;
+      esac
+      ;;
     y) yes=-y ;;
     *) usage ;;
   esac
@@ -96,8 +103,11 @@ for cluster in ${clusters[@]}; do
     [[ $owner = null || ! $owner ]] && error $cluster || successes+=1
 
   elif [[ $state = Running ]]; then
-    echo + prisma-defender-helm.sh $yes -a $action -c $cluster-admin -n $cluster_short -C azure
-    prisma-defender-helm.sh $yes -a $action -c $cluster-admin -n $cluster_short -C azure | tee $TEE
+    args="-a $action -c $cluster-admin -n $cluster_short -C azure"
+    [[ $yes ]] && args+=" $yes"
+    [[ $cri ]] && args+=" -i $cri"
+    echo + prisma-defender-helm.sh $args
+    prisma-defender-helm.sh $args | tee $TEE
     [[ $? -eq 0 ]] && successes+=1 || error $cluster
     if [[ $csv && $action = status ]]; then
       ver=$(grep twistlock $TEE | awk '{print$9}')

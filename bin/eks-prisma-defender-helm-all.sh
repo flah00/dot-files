@@ -20,19 +20,26 @@ function describe_all() {
 }
 
 function usage() {
-  echo "${0##*/} -a ACTION [-p PROFILE] [-r REGION] [-y]"
+  echo "${0##*/} -a ACTION [-p PROFILE] [-r REGION] [-i BOOL] [-y]"
   echo -e "\t-a ACTION  owner, download, install, upgrade, uninstall, uninstall_caas2"
   echo -e "\t-p PROFILE AWS profile (default $profile)"
   echo -e "\t-r REGION  AWS region (default $region)"
+  echo -e "\t-i BOOL    Enable Prisma CRI true or false (default automatic)"
   echo -e "\t-y         Yes to all prompts"
   exit 1
 }
 
-while getopts a:p:r:hy arg; do
+while getopts a:p:r:i:hy arg; do
   case $arg in
     a) action=$OPTARG ;;
     p) profile=$OPTARG ;;
     r) region=$OPTARG ;;
+    i) 
+      case $OPTARG in
+        t|true|y|yes|1) cri=true ;;
+        f|false|n|no|0) cri=false ;;
+      esac
+      ;;
     y) yes=-y ;;
     *) usage ;;
   esac
@@ -52,8 +59,11 @@ for cluster in ${clusters[@]}; do
     echo + eks-get-credentials.sh -p $profile -r $region -i $cluster 
     eks-get-credentials.sh -p $profile -r $region -i $cluster || continue
   fi
-  echo + prisma-defender-helm.sh $yes -a $action -c $cluster -n $cluster_short -C aws
-  prisma-defender-helm.sh $yes -a $action -c $cluster -n $cluster_short
+  args="-a $action -c $cluster -n $cluster_short -C aws"
+  [[ $yes ]] && args+=" $yes"
+  [[ $cri ]] && args+=" -i $cri"
+  echo + prisma-defender-helm.sh $args
+  prisma-defender-helm.sh $args
   [[ $? -eq 0 ]] && successes+=1 || errors+=1
   echo -e "\n=== $cluster id $id end ===\n\n"
 done

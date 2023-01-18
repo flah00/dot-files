@@ -8,23 +8,30 @@ tmp=/tmp/$$.gc.gke.list
 trap 'rm -f $tmp' EXIT
 trap 'exit 1' TERM INT
 function usage() {
-  echo "${0##*/} -a ACTION [-p PROJECT] [-m PATTERN] [-o PATH] [-y]"
+  echo "${0##*/} -a ACTION [-p PROJECT] [-m PATTERN] [-o PATH] [-i BOOL] [-y]"
   echo -e "\t-a ACTION  download, install, upgrade, status, pods, uninstall, uninstall_caas2" 
   echo -e "\t-p PROJECT Google project (default $project)"
   echo -e "\t-m PATTERN Only apply the ACTION to cluster names matching PATTERN"
   echo -e "\t-o PATH    Write results to PATH as CSV for owner, status, or pods"
+  echo -e "\t-i BOOL    Enable Prisma CRI true or false (default automatic)"
   echo -e "\t-y         Yes to all prompts"
   exit 1
 }
 function skip() { clusters_skip+=($1); }
 function error() { clusters_error+=($1); }
 
-while getopts a:p:m:o:hy arg; do
+while getopts a:p:m:o:i:hy arg; do
   case $arg in
     a) action=$OPTARG ;;
     p) gcloud config set project $OPTARG ;;
     m) match=$OPTARG ;;
     o) csv=$OPTARG ;;
+    i) 
+      case $OPTARG in
+        t|true|y|yes|1) cri=true ;;
+        f|false|n|no|0) cri=false ;;
+      esac
+      ;;
     y) yes=-y ;;
     *) usage ;;
   esac
@@ -90,8 +97,11 @@ for cluster in ${clusters[@]}; do
     [[ $owner = null || ! $owner ]] && error $cluster || successes+=1
 
   elif [[ $state = RUNNING ]]; then
-    echo + prisma-defender-helm.sh $yes -a $action -c $cluster -n $cluster_short -C google
-    prisma-defender-helm.sh $yes -a $action -c $cluster -n $cluster_short -C google | tee $TEE
+    args="-a $action -c $cluster -n $cluster_short -C google"
+    [[ $yes ]] && args+=" $yes"
+    [[ $cri ]] && args+=" -i $cri"
+    echo + prisma-defender-helm.sh $args
+    prisma-defender-helm.sh $args | tee $TEE
     [[ $? -eq 0 ]] && successes+=1 || error $cluster
     if [[ $csv && $action = status ]]; then
       ver=$(grep twistlock $TEE | awk '{print$9}')

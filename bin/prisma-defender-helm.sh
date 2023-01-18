@@ -3,6 +3,8 @@
 
 # Usage description in getopts section
 #
+# NOTE: This script does not support taints and labels!
+#
 # If you do not specify a cluster context the current context will be used!
 #
 # You will be prompted for a prisma access key id and secret. You can obtain
@@ -47,12 +49,18 @@ elif [[ -e ~/.aws ]]; then
 elif [[ $(type gcloud &>/dev/null) ]]; then
   cloud=google
 fi
-while getopts 'a:n:c:C:u:p:P:hydD' arg; do
+while getopts 'a:n:c:C:u:p:P:i:hydD' arg; do
   case $arg in
     D) helm_action=download ;;
     a) helm_action=$OPTARG ;;
     n) cluster_name=$OPTARG ;;
     c) cluster_context=$OPTARG ;;
+    i)
+      case $OPTARG in
+        t|true|y|yes|1) cri=true ;;
+        f|false|n|no|0) cri=false ;;
+      esac
+      ;;
     C) cloud=$OPTARG ;;
     y) confirmed=true ;;
     d) downloaded=true ;;
@@ -60,10 +68,11 @@ while getopts 'a:n:c:C:u:p:P:hydD' arg; do
     p) console_path=$OPTARG ;;
     P) console_port=$OPTARG ;;
     *)
-      echo ${0##*/} -a ACTION -n NAME [-c CONTEXT] [-y] [-d] [-C CLOUD] [-u URL] [-p PATH] [-P PORT]
+      echo ${0##*/} -a ACTION -n NAME [-c CONTEXT] [-i BOOL] [-y] [-d] [-C CLOUD] [-u URL] [-p PATH] [-P PORT]
       echo -e "\t-a ACTION  download, install, upgrade, status, pods, uninstall, uninstall_caas2"
       echo -e "\t-n NAME    The prisma name of the cluster (<= 20 char)"
       echo -e "\t-c CONTEXT kubectl context helm uses (default is current context)"
+      echo -e "\t-i BOOL    Enable CRI true or false (default automatic)"
       echo -e "\t-C CLOUD   Cloud platform azure, google, aws (default $cloud)"
       echo -e "\t-u URL     The prisma console URL (default $console)"
       echo -e "\t-p PATH    The Prisma console path prefix (default $console_path)"
@@ -202,6 +211,7 @@ case $helm_action in
         -X POST \
         -d '{"username":"'$access_key_id'", "password":"'$secret_key'"}' \
         https://$console$console_path/api/v1/authenticate)
+      [[ $? -ne 0 ]] && echo ERROR curl auth failed && exit 3
 
       if [[ $token =~ ^\{\"err ]]; then
         echo -e "ERROR echo $token\n" 1>&2
@@ -211,6 +221,21 @@ case $helm_action in
       token=${token##*token\":\"}
       token=${token%%\"\}}
 
+      if [[ ! $cri ]]; then
+        cri=false
+        # only linux is supported, so let's not consult runtime of potential windows workers
+        # don't forget, there could be multiple node pools running different OS/container runtimes 
+        echo + kubectl --request-timeout=3s get node -l kubernetes.io/os=linux -o jsonpath='{..containerRuntimeVersion}' 1>&2
+        runtimes=($(kubectl --request-timeout=3s get node -l kubernetes.io/os=linux -o jsonpath='{..containerRuntimeVersion}'))
+        [[ $? -ne 0 ]] && echo ERROR failed to determine CRI, re-run the previous command and set -i flag to false if output is docker: or true otherwise && exit 3
+        for runtime in ${runtimes[@]}; do
+          # if the container runtime isn't docker we set CRI to true
+          [[ ! $runtime =~ ^docker: ]] && cri=true && break
+        done
+        echo Setting CRI to $cri
+      fi
+      data='{ "orchestration": "kubernetes", "consoleAddr": "'$console:$console_port'", "namespace": "twistlock", "cluster": "'$cluster_name'", "cri": '$cri', "uniqueHostname": true, "serviceAccounts": true }'
+      echo Submitting request: $data
       echo Fetching helm chart...
       curl -k \
         --silent \
@@ -218,9 +243,10 @@ case $helm_action in
         -H "Authorization: Bearer $token" \
         -X POST \
         -O \
-        -d '{ "orchestration": "kubernetes", "consoleAddr": "'$console:$console_port'", "namespace": "twistlock", "cluster": "'$cluster_name'", "cri": true, "uniqueHostname": true, "serviceAccounts": true }' \
+        -d "$data" \
         https://$console$console_path/api/v1/defenders/helm/twistlock-defender-helm.tar.gz
 
+      [[ $? -ne 0 ]] && echo ERROR curl helm download failed && exit 3
       # If we get back non-binary data something went wrong...
       if head -1 twistlock-defender-helm.tar.gz | grep -qi '"err"'; then
         echo -e "ERROR $(cat twistlock-defender-helm.tar.gz)\n" 1>&2
