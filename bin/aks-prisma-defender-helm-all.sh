@@ -63,7 +63,7 @@ fi
 [[ $action = pods && $csv ]] && echo "Cluster,Id,Prisma Name,Prisma Pod Name,Status" > $csv
 
 declare -i successes=0 total=0
-delcare -a clusters_skip clusters_error
+declare -a clusters_skip clusters_error
 TEE=$(mktemp /tmp/${0##*/}XXXX)
 for cluster in ${clusters[@]}; do
   total+=1
