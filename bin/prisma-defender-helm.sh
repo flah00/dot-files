@@ -61,7 +61,7 @@ while getopts 'a:n:c:C:u:p:P:hydD' arg; do
     P) console_port=$OPTARG ;;
     *)
       echo ${0##*/} -a ACTION -n NAME [-c CONTEXT] [-y] [-d] [-C CLOUD] [-u URL] [-p PATH] [-P PORT]
-      echo -e "\t-a ACTION  download, install, upgrade, status, pods, uninstall_caas2"
+      echo -e "\t-a ACTION  download, install, upgrade, status, pods, uninstall, uninstall_caas2"
       echo -e "\t-n NAME    The prisma name of the cluster (<= 20 char)"
       echo -e "\t-c CONTEXT kubectl context helm uses (default is current context)"
       echo -e "\t-C CLOUD   Cloud platform azure, google, aws (default $cloud)"

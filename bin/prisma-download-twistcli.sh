@@ -8,7 +8,7 @@ while getopts u:dh arg; do
     *)
       echo ${0##*/} [-u URL] [-d]
       echo -e "\t-u URL The prisma console URL (default $console)"
-      echo -e "\t-d Do not download the helm chart, use the existing file ./twistlock-defender-helm.tar.gz"
+      echo -e "\t-d Do not download twistcli, use the existing file ./twistcli"
       exit 1
       ;;
   esac
@@ -79,14 +79,15 @@ fi
 old=$(/opt/prisma/bin/twistcli --version 2>/dev/null) 
 old=${old:-NOT INSTALLED}
 new=$(./twistcli --version) 
+short_ver=$(./twistcli --version | awk '{print$NF}')
 if [[ ! $new ]]; then
   echo ERROR execution of ./twistcli failed, aborting
   exit 2
-elif [[ $old != $new ]]; then
+elif [[ ! -f /opt/prisma/bin/twistcli-$short_ver || $old != $new ]]; then
   echo "updating twistcli from '$old' to '$new'"
   set -x
   sudo mkdir -p /opt/prisma/bin
-  sudo mv twistcli /opt/prisma/bin/twistcli 
+  sudo mv twistcli /opt/prisma/bin/twistcli-$short_ver
 else
   echo twistcli up to date
   rm -f twistcli 

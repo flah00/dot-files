@@ -50,4 +50,3 @@ f.each do |arg|
     puts "found #{r.count} rows"
   end
 end
-

@@ -8,11 +8,11 @@ trap 'exit 1' TERM INT
 function describe_all() {
   TMPDIR=$(mktemp -d ${0##*})
   set -x
-  clusters=($(aws --profile=$profile --region=$region eks list-clusters --query clusters --output=text))
+  clusters=($(aws eks list-clusters --query clusters --output=text))
   set +x
   for cluster in ${clusters[@]}; do
     set -x
-    aws --profile=$profile --region=$region eks describe-cluster --query cluster --name $cluster --output=json >$TMPDIR/$cluster
+    aws eks describe-cluster --query cluster --name $cluster --output=json >$TMPDIR/$cluster
     set +x
   done
   jq -s . $TMPDIR/* > $tmp
@@ -20,10 +20,10 @@ function describe_all() {
 
 function usage() {
   echo "Get kubectl configs for a cluster or all known clusters in the account"
-  echo "${0##*/} {-a | -i ID | -c CLUSTER -r REGION} [-p PROFILE]"
+  echo "${0##*/} {-a | -i ID | -c CLUSTER} [-r REGION] [-p PROFILE]"
   echo -e "\t-a          configure all of the clusters"
   echo -e "\t-i PATTERN  the cluster ID, ie 5524"
-  echo -e "\t-c CLUSTER  the name of the cluster, ie AZEUKS-I-5458-OCW-DEV-Cluster"
+  echo -e "\t-c CLUSTER  the name of the cluster"
   echo -e "\t-r REGION   the AWS region (default: $region)"
   echo -e "\t-p PROFILE  the AWS profile (default: $profile)"
   echo
@@ -32,15 +32,15 @@ function usage() {
   echo -e "\tSpecify an id, it will configure cluster name"
   echo -e "\t${0##*/} -i 5524"
   echo -e "\tSpecify a cluster name and resource group name"
-  echo -e "\t${0##*/} -c AZEUDKS-I-5524-CACT-Cluster -r us-east-2"
+  echo -e "\t${0##*/} -c AZEUDKS-I-5524-CACT-Cluster"
   exit 1
 }
 while getopts i:c:r:p:ah arg; do
   case $arg in
     i) id=$OPTARG ;;
     c) cn=$OPTARG ;;
-    r) rg=$OPTARG ;;
-    p) project=$OPTARG ;;
+    r) export AWS_DEFAULT_REGION=$OPTARG; region=$AWS_DEFAULT_REGION ;;
+    p) export AWS_DEFAULT_PROFILE=$OPTARG ; profile=$AWS_DEFAULT_PROFILE;;
     a) all=true ;;
     *) usage ;;
   esac
@@ -72,7 +72,7 @@ elif [[ $id ]]; then
   fi
 
 elif [[ $cn ]]; then
-  echo Configuring cluster $cn in region $rg in profile $profile
+  echo Configuring cluster $cn in region $region in profile $profile
   clusters=($cn)
   if [[ ! ${clusters[0]} ]]; then
     echo Cluster not defined
@@ -88,7 +88,7 @@ fi
 #for i in $(seq 0 $n); do
 for cluster in ${clusters[@]}; do
   set -x
-  aws --profile=$profile --region=$region eks update-kubeconfig --name $cluster
+  aws eks update-kubeconfig --name $cluster
   set +x
 done
 
