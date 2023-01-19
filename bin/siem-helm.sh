@@ -118,6 +118,13 @@ case $helm_action in
     exec helm pull $fluent_bit --version="$fluent_bit_version"
     ;;
   un*)
+    cur_version=$(helm ls -n $helm_namespace --filter ^$helm_release | awk '{print$9}')
+    if [[ ! $cur_version ]]; then
+      echo ERROR helm chart $fluent_bit release $helm_release is not installed 1>&2
+      exit 2
+    fi
+    echo $(tput setaf 1)UNINSTALL helm chart $fluent_bit version $cur_version from cluster $(kubectl config current-context)$(tput sgr0)
+    confirm $confirmed
     set -x
     exec helm uninstall $helm_release --namespace $helm_namespace --timeout=2m
     ;;
@@ -135,6 +142,17 @@ case $helm_action in
     ;;
   rollback)
     [[ ! $helm_revision ]] && echo ERROR rollback requires a revision 1>&2 && usage 2
+    cur_rev=$(helm ls -n $helm_namespace --filter ^$helm_release | awk '{print$3}')
+    if [[ ! $cur_rev ]]; then
+      echo ERROR helm chart $fluent_bit release $helm_release is not installed 1>&2
+      exit 2
+    elif [[ $cur_rev = $helm_revision ]]; then
+      echo ERROR helm chart $fluent_bit release $helm_release is already at revision $helm_revision 1>&2
+      exit 2
+    fi
+    echo $(tput setaf 1)ROLLBACK helm chart $fluent_bit current revision $cur_version rollback to $helm_revision
+    echo          cluster $(kubectl config current-context)$(tput sgr0)
+    confirm $confirmed
     set -x
     exec helm rollback $helm_release $helm_revision --namespace $helm_namespace --recreate-pods --cleanup-on-fail --timeout=5m
     ;;
@@ -149,6 +167,15 @@ case $helm_action in
       echo ERROR Unable to set cluster name in new values.yaml $new_values 1>&2
       exit 3
     fi
+    chart_version=$(helm show chart ./twistlock-defender-helm.tar.gz | grep ^version:)
+    cur_version=$(helm ls -n twistlock --filter ^twistlock-defender-ds | awk '{print$9}')
+    # chart-name-0.1.2 -> 0.1.2
+    cur_version=${cur_version##*-}
+    [[ $cur_version ]] && echo -e "\tcurrent version: $cur_version" || echo -e "\tcurrent version: NOT INSTALLED"
+    confirm $confirmed
+    echo -e "\tnew $chart_version"
+    echo CLUSTER CONTEXT $(kubectl config current-context)
+    echo CLUSTER NAME ${cluster_name}
     set -x
     # 2023-01-19: linux only, we don't have a windows solution just yet
     # NOTE: must escape the .io period, lest it turn into a new key

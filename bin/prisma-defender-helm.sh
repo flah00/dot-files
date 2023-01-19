@@ -4,6 +4,7 @@
 # Usage description in getopts section
 #
 # NOTE: This script does not support taints and labels!
+#       But it does limit the daemonset to node_selector.kubernetes\.io/os=linux
 #
 # If you do not specify a cluster context the current context will be used!
 #
@@ -122,7 +123,7 @@ case $helm_action in
       echo ERROR helm chart twistlock-defender-ds is not installed 1>&2
       exit 2
     fi
-    echo UNINSTALL helm chart twistlock-defender-ds version $cur_version from cluster $(kubectl config get-context)
+    echo $(tput setaf 1)UNINSTALL helm chart twistlock-defender-ds version $cur_version from cluster $(kubectl config get-context)$(tput sgr0)
     confirm $confirmed
     set -x; exec helm uninstall twistlock-defender-ds --namespace twistlock
     ;;
@@ -141,7 +142,7 @@ case $helm_action in
       echo ERROR helm was used to install defender, use action uninstall 1>&2
       exit 2
     fi
-    echo Delete proof of concept prisma defender from cluster $(kubectl config current-context)
+    echo $(tput setaf 1)Delete proof of concept prisma defender from cluster $(kubectl config current-context)$(tput sgr0)
     confirm $confirmed
     declare -i ex=0
     set -x
@@ -270,15 +271,26 @@ case $helm_action in
     echo -e "\tnew $chart_version"
     echo CLUSTER CONTEXT $(kubectl config current-context)
     echo CLUSTER NAME ${cluster_name}
+    ## 2023-01-19 Work around node_selector bug in prisma helm chart
+    TMP=$(mktemp -d /tmp/${0##*/}-XXXXXXX)
+    tar xzf twistlock-defender-helm.tar.gz -C $TMP  &>/dev/null
+    sed -i 's/{{ .Values.node_selector }}/{{ toYaml .Values.node_selector | indent 8 }}/' $TMP/twistlock-defender/templates/daemonset.yaml
+    tar czf $PWD/twistlock-defender-helm.tar.gz -C $TMP twistlock-defender
+    rm -rf $TMP
+    ## END bugfix
     [[ $helm_action = download ]] && echo "Downloaded twistlock-defender-helm.tar.gz, exiting" && exit 0
     confirm $confirmed
-    echo + helm $helm_action twistlock-defender-ds ./twistlock-defender-helm.tar.gz \
+    echo + helm upgrade twistlock-defender-ds ./twistlock-defender-helm.tar.gz \
+      --set "node_selector.kubernetes\\.io/os=linux" \
       --namespace twistlock \
+      --install \
       --create-namespace \
       --atomic \
       --timeout=2m
-    helm $helm_action twistlock-defender-ds ./twistlock-defender-helm.tar.gz \
+    helm upgrade twistlock-defender-ds ./twistlock-defender-helm.tar.gz \
+      --set "node_selector.kubernetes\\.io/os=linux" \
       --namespace twistlock \
+      --install \
       --create-namespace \
       --atomic \
       --timeout=2m
