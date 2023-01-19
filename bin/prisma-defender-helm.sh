@@ -34,6 +34,21 @@ function confirm() {
     [[ $accept != "" && ! $accept =~ ^y(es)? ]] && exit 2
   fi
 }
+function usage() {
+  echo ${0##*/} -a ACTION -n NAME [-c CONTEXT] [-i BOOL] [-y] [-d] [-C CLOUD] [-u URL] [-p PATH] [-P PORT]
+  echo -e "\t-a ACTION  download, install, upgrade, status, pods, uninstall, uninstall_caas2"
+  echo -e "\t-n NAME    The prisma name of the cluster (<= 20 char)"
+  echo -e "\t-c CONTEXT kubectl context helm uses (default is current context)"
+  echo -e "\t-i BOOL    Enable CRI true or false (default automatic)"
+  echo -e "\t-C CLOUD   Cloud platform azure, google, aws (default $cloud)"
+  echo -e "\t-u URL     The prisma console URL (default $console)"
+  echo -e "\t-p PATH    The Prisma console path prefix (default $console_path)"
+  echo -e "\t-P PORT    The Prisma console port (default $console_port)"
+  echo -e "\t-d         Do not download the helm chart, use the existing file ./twistlock-defender-helm.tar.gz"
+  echo -e "\t-D         Download the chart, do not run helm"
+  echo -e "\t-y         Yes to all prompts"
+  exit
+}
 
 # POV instance: CAAS2 us-west1.cloud.twistlock.com/us-4-161028402
 # production instance: APP2
@@ -67,21 +82,7 @@ while getopts 'a:n:c:C:u:p:P:i:hydD' arg; do
     u) console=$OPTARG ;;
     p) console_path=$OPTARG ;;
     P) console_port=$OPTARG ;;
-    *)
-      echo ${0##*/} -a ACTION -n NAME [-c CONTEXT] [-i BOOL] [-y] [-d] [-C CLOUD] [-u URL] [-p PATH] [-P PORT]
-      echo -e "\t-a ACTION  download, install, upgrade, status, pods, uninstall, uninstall_caas2"
-      echo -e "\t-n NAME    The prisma name of the cluster (<= 20 char)"
-      echo -e "\t-c CONTEXT kubectl context helm uses (default is current context)"
-      echo -e "\t-i BOOL    Enable CRI true or false (default automatic)"
-      echo -e "\t-C CLOUD   Cloud platform azure, google, aws (default $cloud)"
-      echo -e "\t-u URL     The prisma console URL (default $console)"
-      echo -e "\t-p PATH    The Prisma console path prefix (default $console_path)"
-      echo -e "\t-P PORT    The Prisma console port (default $console_port)"
-      echo -e "\t-d         Do not download the helm chart, use the existing file ./twistlock-defender-helm.tar.gz"
-      echo -e "\t-D         Download the chart, do not run helm"
-      echo -e "\t-y         Yes to all prompts"
-      exit
-      ;;
+    *) usage ;;
   esac
 done
 
@@ -91,8 +92,6 @@ if [[ $cluster_context ]]; then
     case $cloud in
       azure)
         echo + aks-get-credentials.sh -i $cluster_context 1>&2
-        # AZEUKS-I-5429-IDVS-Cluster1 -> 5429
-        id=$(echo $cluster_context | sed -E 's/[^0-9]*([0-9]{4,})[^0-9].*/\1/')
         aks-get-credentials.sh -i $cluster_context || exit 3
         ;;
       google)
@@ -133,7 +132,7 @@ case $helm_action in
     ;;
 
   pods)
-    set -x; exec kubectl -n twistlock get pods
+    set -x; exec kubectl --request-timeout=3s -n twistlock get pods
     ;;
 
   uninstall_caas2)

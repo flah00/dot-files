@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 # Apply the given action to all of the clusters for the given subscription
-# -a ACTION install, upgrade, uninstall, uninstall_caas2
-# -s SUB azure subscription
 sub=b1e119d0-b7fa-451d-af39-0611d33b30dc
 tmp=/tmp/$$.az.aks.list
 trap 'rm -f $tmp' EXIT
@@ -138,3 +136,4 @@ echo Skipped: ${#clusters_skip[@]}
 [[ ${#clusters_skip[@]} -gt 0 ]] && echo -e "\t${clusters_skip[@]}"
 echo Total: $total
 exit ${#clusters_error[@]}
+
