@@ -14,7 +14,7 @@ function create_values() {
   file=$(mktemp /tmp/${0##*/}-XXXXXX)
   echo $file
   cat <<EOT | base64 -d | gzip -d > $file
-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
+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
 EOT
 }
 function confirm() {
@@ -28,16 +28,17 @@ function confirm() {
 }
 function usage() {
   echo "Manage the helm chart $fluent_bit in namespace $helm_namespace release $helm_release"
-  echo ${0##*/} -a ACTION [-c CONTEXT] [-v VERSION] [-r REV] [-d LOC] [-y] [-C CLOUD]
+  echo ${0##*/} -a ACTION [-n NAME] [-c CONTEXT] [-v VERSION] [-r REV] [-d LOC] [-y] [-C CLOUD]
   echo -e "\t-a ACTION  download, install, upgrade, status, history, rollback, pods, uninstall"
   echo -e "\t-c CONTEXT kubectl context helm uses (default is current context)"
+  echo -e "\t-n NAME    The name of the cluster; becomes cluster_name= metadata; required to install/upgrade"
   echo -e "\t-v VERSION A semantic version string (default $fluent_bit_version)\n\t\thttps://github.com/Masterminds/semver#hyphen-range-comparisons"
   echo -e "\t-C CLOUD   Cloud platform azure, google, aws (default $cloud)"
   echo -e "\t-r REV     Helm history revision number, required when rolling back"
   echo -e "\t-d LOC     Specify the helm chart location, can be helm or local file (default $fluent_bit)"
   echo -e "\t-D         Download the chart, do not run helm"
   echo -e "\t-y         Yes to all prompts"
-  exit
+  exit ${1:-0}
 }
 
 if [[ -e ~/.azure && -e ~/.aws ]] || [[ -e ~/.azure && $(type gcloud &>/dev/null) ]] || [[ -e ~/.aws && $(type gcloud &>/dev/null) ]]; then
@@ -54,11 +55,12 @@ fluent_bit_version=">0.0.0"
 fluent_bit=fluent/fluent-bit
 helm_release=soc
 helm_namespace=siem
-while getopts 'a:c:C:v:d:r:Dyh' arg; do
+while getopts 'a:c:n:C:v:d:r:Dyh' arg; do
   case $arg in
     D) helm_action=download ;;
     a) helm_action=$OPTARG ;;
     c) cluster_context=$OPTARG ;;
+    n) cluster_name=$OPTARG ;;
     C) cloud=$OPTARG ;;
     v) fluent_bit_version="$OPTARG" ;;
     r) helm_revision=$OPTARG ;;
@@ -117,7 +119,7 @@ case $helm_action in
     ;;
   un*)
     set -x
-    exec helm uninstall $helm_release --namespace $helm_namespace --atomic --timeout=2m
+    exec helm uninstall $helm_release --namespace $helm_namespace --timeout=2m
     ;;
   status)
     set -x
@@ -132,14 +134,15 @@ case $helm_action in
     exec helm history --namespace $helm_namespace $helm_release
     ;;
   rollback)
-    [[ ! $helm_revision ]] && echo ERROR rollback requires 1>&2 && exit 2
+    [[ ! $helm_revision ]] && echo ERROR rollback requires a revision 1>&2 && usage 2
     set -x
     exec helm rollback $helm_release $helm_revision --namespace $helm_namespace --recreate-pods --cleanup-on-fail --timeout=5m
     ;;
   in*|up*)
+    [[ ! $cluster_name ]] && echo ERROR cluster name is required && usage 2
     new_values=$(mktemp /tmp/${0##*/}-XXXXX)
     orig_values=$(create_values)
-    sed "s/REPLACE_THIS/$cluster_context/" < $orig_values > $new_values
+    sed "s/REPLACE_THIS/$cluster_name/" < $orig_values > $new_values
     orig_sum=$(openssl md5 $orig_values | awk '{print$2}')
     new_sum=$(openssl md5 $new_values | awk '{print$2}')
     if [[ $orig_sum = $new_sum ]]; then

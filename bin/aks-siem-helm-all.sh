@@ -53,11 +53,11 @@ for cluster in ${clusters[@]}; do
   echo === $cluster begin ===
 
   if [[ $state = Running ]]; then
-    args="-a $action -c $cluster-admin -C azure"
+    args="-a $action -c $cluster-admin -n $cluster -C azure"
     [[ $yes ]] && args+=" $yes"
     echo + siem-helm.sh $args
     siem-helm.sh $args | tee $TEE
-    [[ $? -eq 0 ]] && successes+=1 || error $cluster
+    [[ $(echo "${PIPESTATUS[@]}" | tr -s ' ' + | bc) -eq 0 ]] && successes+=1 || error $cluster
     if [[ $csv && $action = status ]]; then
       ver=$(grep soc $TEE | awk '{print$9}')
       echo "\"$cluster\",\"$ver\"" >> $csv

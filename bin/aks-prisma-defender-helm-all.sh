@@ -106,7 +106,7 @@ for cluster in ${clusters[@]}; do
     [[ $cri ]] && args+=" -i $cri"
     echo + prisma-defender-helm.sh $args
     prisma-defender-helm.sh $args | tee $TEE
-    [[ $? -eq 0 ]] && successes+=1 || error $cluster
+    [[ $(echo "${PIPESTATUS[@]}" | tr -s ' ' + | bc) -eq 0 ]] && successes+=1 || error $cluster
     if [[ $csv && $action = status ]]; then
       ver=$(grep twistlock $TEE | awk '{print$9}')
       echo "\"$cluster\",$id,\"$cluster_short\",\"$ver\"" >> $csv
