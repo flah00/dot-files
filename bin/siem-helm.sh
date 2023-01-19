@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# 
+# Install fluent/fluent-bit in the siem namespace release soc
+# Only permit this daemonset pod to run on kubernetes.io/os=linux
 # 1. helm repo add
 # 2. helm repo update
 # 3. confirm action
@@ -27,9 +28,8 @@ function confirm() {
 }
 function usage() {
   echo "Manage the helm chart $fluent_bit in namespace $helm_namespace release $helm_release"
-  echo ${0##*/} -a ACTION -n NAME [-c CONTEXT] [-v VERSION] [-r REV] [-d LOC] [-y] [-C CLOUD]
+  echo ${0##*/} -a ACTION [-c CONTEXT] [-v VERSION] [-r REV] [-d LOC] [-y] [-C CLOUD]
   echo -e "\t-a ACTION  download, install, upgrade, status, history, rollback, pods, uninstall"
-  echo -e "\t-n NAME    The prisma name of the cluster (<= 20 char)"
   echo -e "\t-c CONTEXT kubectl context helm uses (default is current context)"
   echo -e "\t-v VERSION A semantic version string (default $fluent_bit_version)\n\t\thttps://github.com/Masterminds/semver#hyphen-range-comparisons"
   echo -e "\t-C CLOUD   Cloud platform azure, google, aws (default $cloud)"
@@ -54,11 +54,10 @@ fluent_bit_version=">0.0.0"
 fluent_bit=fluent/fluent-bit
 helm_release=soc
 helm_namespace=siem
-while getopts 'a:n:c:C:v:d:r:Dyh' arg; do
+while getopts 'a:c:C:v:d:r:Dyh' arg; do
   case $arg in
     D) helm_action=download ;;
     a) helm_action=$OPTARG ;;
-    n) cluster_name=$OPTARG ;;
     c) cluster_context=$OPTARG ;;
     C) cloud=$OPTARG ;;
     v) fluent_bit_version="$OPTARG" ;;
@@ -140,16 +139,18 @@ case $helm_action in
   in*|up*)
     new_values=$(mktemp /tmp/${0##*/}-XXXXX)
     orig_values=$(create_values)
-    sed "s/REPLACE_THIS/$cluster_name/" < $orig_values > $new_values
+    sed "s/REPLACE_THIS/$cluster_context/" < $orig_values > $new_values
     orig_sum=$(openssl md5 $orig_values | awk '{print$2}')
     new_sum=$(openssl md5 $new_values | awk '{print$2}')
-    if [[ $orig_sum != $new_sum ]]; then
+    if [[ $orig_sum = $new_sum ]]; then
       echo ERROR Unable to set cluster name in new values.yaml $new_values 1>&2
       exit 3
     fi
     set -x
+    # 2023-01-19: linux only, we don't have a windows solution just yet
+    # NOTE: must escape the .io period, lest it turn into a new key
     exec helm upgrade $helm_release $fluent_bit \
-      --debug --dry-run \
+      --set "nodeSelector.kubernetes\\.io/os=linux" \
       --version="$fluent_bit_version" \
       --values "$new_values" \
       --namespace $helm_namespace \

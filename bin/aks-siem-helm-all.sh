@@ -79,6 +79,7 @@ for cluster in ${clusters[@]}; do
   echo -e "\n=== $cluster end ===\n\n"
 done
 
+rm -f /tmp/${0##*/}-*
 echo Errors: ${#clusters_error[@]}
 [[ ${#clusters_error[@]} -gt 0 ]] && echo -e "\t${clusters_error[@]}"
 echo Successes: $successes
