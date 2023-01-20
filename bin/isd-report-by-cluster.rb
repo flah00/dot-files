@@ -18,13 +18,16 @@ require 'csv'
 require 'pp'
 require 'optparse'
 require 'byebug'
-options = {}
+options = {date: false}
 OptionParser.new do |opts|
   opts.on('-c INPUT', '--clusters INPUT', 'file, each line is a cluster name') do |v|
     options[:clusters] = v
   end
   opts.on('-i CSV', '--isd-csv CSV', 'csv input') do |v|
     options[:isd_csv] = v
+  end
+  opts.on('--date', 'include today\'s date in the filename') do |v|
+    options[:date] = true
   end
 end.parse!
 
@@ -38,8 +41,10 @@ end
 f.each do |arg|
   s=CSV.open(options[:isd_csv], 'r', headers: true)
   arg=arg.chomp
+  arg+=Time.now.strftime('-%Y-%m-%d') if options[:date]
+  arg+='.csv'
   print "Checking '#{arg}' "
-  CSV.open(arg+'.csv', 'wb') do |o|
+  CSV.open(arg, 'wb') do |o|
     o << s.first.headers
     r=s.select{|row| 
       row.to_s[/Cluster:\s+[-\w\d,]*#{arg}/i]
