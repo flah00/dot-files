@@ -5,24 +5,35 @@ tmp=/tmp/$$.az.aks.list
 trap 'rm -f $tmp' EXIT
 trap 'exit 1' TERM INT
 function usage() {
-  echo "${0##*/} -a ACTION [-s SUB] [-m PATTERN] [-o PATH] [-i BOOL] [-y]"
+  echo "${0##*/} -a ACTION [-s SUB] [-m PATTERN] [-o PATH] [-i BOOL] [-R REGION] [-S OS] [-y]"
   echo -e "\t-a ACTION  download, install, history, rollback, upgrade, status, pods, uninstall" 
   echo -e "\t-m PATTERN Only apply the ACTION to cluster names matching PATTERN"
   echo -e "\t-s SUB     Azure subscription (default $sub)"
   echo -e "\t-o PATH    Write results to PATH as CSV for owner, status, or pods"
+  echo -e "\t-R REGION  The account region, ie AMR, APA, EMEA, India (default $account_region)"
+  echo -e "\t-S OS      OS of the node workers: linux or windows (default $worker_os)"
   echo -e "\t-y         Yes to all prompts"
   exit 1
 }
 function skip() { clusters_skip+=($1); }
 function error() { clusters_error+=($1); }
 
-while getopts a:s:m:o:hy arg; do
+account_region=$(az account show --query 'name')
+while getopts a:s:m:o:R:S:hy arg; do
   case $arg in
     a) action=$OPTARG ;;
     s) sub=$OPTARG ;;
     m) match=$OPTARG ;;
     o) csv=$OPTARG ;;
+    R) account_region=$OPTARG ;;
     y) yes=-y ;;
+    S)
+      case $OPTARG in
+        l*) worker_os=linux ;;
+        w*) worker_os=windows ;;
+        *) usage 2 ;;
+      esac
+      ;;
     *) usage ;;
   esac
 done
@@ -35,6 +46,7 @@ set -x
 az account set --subscription $sub
 az aks list --query '[].{cn:name, rg:resourceGroup, state:powerState.code}' >$tmp 
 set +x
+
 if [[ $match ]]; then
   clusters=($(jq -r '.[].cn | select(contains("'"$match"'"))' $tmp))
 else
@@ -54,6 +66,8 @@ for cluster in ${clusters[@]}; do
 
   if [[ $state = Running ]]; then
     args="-a $action -c $cluster-admin -n $cluster -C azure"
+    [[ $worker_os ]] && args+=" -S $worker_os"
+    [[ $account_region ]] && args+=" -R $account_region"
     [[ $yes ]] && args+=" $yes"
     echo + siem-helm.sh $args
     siem-helm.sh $args | tee $TEE

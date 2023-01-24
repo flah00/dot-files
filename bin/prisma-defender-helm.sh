@@ -36,12 +36,13 @@ function confirm() {
   fi
 }
 function usage() {
-  echo ${0##*/} -a ACTION -n NAME [-c CONTEXT] [-i BOOL] [-y] [-d] [-C CLOUD] [-u URL] [-p PATH] [-P PORT]
+  echo ${0##*/} -a ACTION -n NAME [-c CONTEXT] [-i BOOL] [-y] [-d] [-C CLOUD] [-S OS] [-u URL] [-p PATH] [-P PORT]
   echo -e "\t-a ACTION  download, install, upgrade, status, pods, uninstall, uninstall_caas2"
   echo -e "\t-n NAME    The prisma name of the cluster (<= 20 char)"
   echo -e "\t-c CONTEXT kubectl context helm uses (default is current context)"
   echo -e "\t-i BOOL    Enable CRI true or false (default automatic)"
   echo -e "\t-C CLOUD   Cloud platform azure, google, aws (default $cloud)"
+  echo -e "\t-S OS      OS of the node workers: linux or windows (default $worker_os)"
   echo -e "\t-u URL     The prisma console URL (default $console)"
   echo -e "\t-p PATH    The Prisma console path prefix (default $console_path)"
   echo -e "\t-P PORT    The Prisma console port (default $console_port)"
@@ -56,6 +57,7 @@ function usage() {
 console=us-east1.cloud.twistlock.com
 console_port=443
 console_path=/us-2-158262739
+worker_os=linux
 if [[ -e ~/.azure && -e ~/.aws ]] || [[ -e ~/.azure && $(type gcloud &>/dev/null) ]] || [[ -e ~/.aws && $(type gcloud &>/dev/null) ]]; then
   :
 elif [[ -e ~/.azure ]]; then
@@ -65,7 +67,7 @@ elif [[ -e ~/.aws ]]; then
 elif [[ $(type gcloud &>/dev/null) ]]; then
   cloud=google
 fi
-while getopts 'a:n:c:C:u:p:P:i:hydD' arg; do
+while getopts 'a:n:c:C:S:u:p:P:i:hydD' arg; do
   case $arg in
     D) helm_action=download ;;
     a) helm_action=$OPTARG ;;
@@ -75,9 +77,17 @@ while getopts 'a:n:c:C:u:p:P:i:hydD' arg; do
       case $OPTARG in
         t|true|y|yes|1) cri=true ;;
         f|false|n|no|0) cri=false ;;
+        *) usage 2 ;;
       esac
       ;;
     C) cloud=$OPTARG ;;
+    S)
+      case $OPTARG in
+        l*) worker_os=linux ;;
+        w*) worker_os=windows ;;
+        *) usage 2 ;;
+      esac
+      ;;
     y) confirmed=true ;;
     d) downloaded=true ;;
     u) console=$OPTARG ;;
@@ -234,7 +244,7 @@ case $helm_action in
         done
         echo Setting CRI to $cri
       fi
-      data='{ "orchestration": "kubernetes", "consoleAddr": "'$console:$console_port'", "namespace": "twistlock", "cluster": "'$cluster_name'", "cri": '$cri', "uniqueHostname": true, "serviceAccounts": true }'
+      data='{ "orchestration": "kubernetes", "consoleAddr": "'$console:$console_port'", "namespace": "twistlock", "cluster": "'$cluster_name'", "cri": '$cri', "uniqueHostname": true, "serviceAccounts": true, "nodeSelector": "kubernetes.io/os: \"'$worker_os'\"" }'
       echo Submitting request: $data
       echo Fetching helm chart...
       curl -k \
@@ -271,24 +281,15 @@ case $helm_action in
     echo -e "\tnew $chart_version"
     echo CLUSTER CONTEXT $(kubectl config current-context)
     echo CLUSTER NAME ${cluster_name}
-    ## 2023-01-19 Work around node_selector bug in prisma helm chart
-    TMP=$(mktemp -d /tmp/${0##*/}-XXXXXXX)
-    tar xzf twistlock-defender-helm.tar.gz -C $TMP  &>/dev/null
-    sed -i 's/{{ .Values.node_selector }}/{{ toYaml .Values.node_selector | indent 8 }}/' $TMP/twistlock-defender/templates/daemonset.yaml
-    tar czf $PWD/twistlock-defender-helm.tar.gz -C $TMP twistlock-defender
-    rm -rf $TMP
-    ## END bugfix
     [[ $helm_action = download ]] && echo "Downloaded twistlock-defender-helm.tar.gz, exiting" && exit 0
     confirm $confirmed
     echo + helm upgrade twistlock-defender-ds ./twistlock-defender-helm.tar.gz \
-      --set "node_selector.kubernetes\\.io/os=linux" \
       --namespace twistlock \
       --install \
       --create-namespace \
       --atomic \
       --timeout=2m
     helm upgrade twistlock-defender-ds ./twistlock-defender-helm.tar.gz \
-      --set "node_selector.kubernetes\\.io/os=linux" \
       --namespace twistlock \
       --install \
       --create-namespace \

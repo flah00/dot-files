@@ -5,19 +5,21 @@ tmp=/tmp/$$.az.aks.list
 trap 'rm -f $tmp' EXIT
 trap 'exit 1' TERM INT
 function usage() {
-  echo "${0##*/} -a ACTION [-s SUB] [-m PATTERN] [-o PATH] [-i BOOL] [-y]"
+  echo "${0##*/} -a ACTION [-s SUB] [-m PATTERN] [-o PATH] [-i BOOL] [-S OS] [-y]"
   echo -e "\t-a ACTION  owner, download, install, upgrade, status, pods, uninstall, uninstall_caas2" 
   echo -e "\t-m PATTERN Only apply the ACTION to cluster names matching PATTERN"
   echo -e "\t-s SUB     Azure subscription (default $sub)"
   echo -e "\t-o PATH    Write results to PATH as CSV for owner, status, or pods"
   echo -e "\t-i BOOL    Enable Prisma CRI true or false (default automatic)"
+  echo -e "\t-S OS      OS of the node workers: linux or windows (default $worker_os)"
   echo -e "\t-y         Yes to all prompts"
   exit 1
 }
 function skip() { clusters_skip+=($1); }
 function error() { clusters_error+=($1); }
 
-while getopts a:s:m:o:i:hy arg; do
+worker_os=linux
+while getopts a:s:m:o:i:S:hy arg; do
   case $arg in
     a) action=$OPTARG ;;
     s) sub=$OPTARG ;;
@@ -29,6 +31,12 @@ while getopts a:s:m:o:i:hy arg; do
         f|false|n|no|0) cri=false ;;
       esac
       ;;
+    S)
+      case $OPTARG in
+        l*) worker_os=linux ;;
+        w*) worker_os=windows ;;
+        *) usage 2 ;;
+      esac
     y) yes=-y ;;
     *) usage ;;
   esac
@@ -101,7 +109,7 @@ for cluster in ${clusters[@]}; do
     [[ $owner = null || ! $owner ]] && error $cluster || successes+=1
 
   elif [[ $state = Running ]]; then
-    args="-a $action -c $cluster-admin -n $cluster_short -C azure"
+    args="-a $action -c $cluster-admin -n $cluster_short -S $worker_os -C azure"
     [[ $yes ]] && args+=" $yes"
     [[ $cri ]] && args+=" -i $cri"
     echo + prisma-defender-helm.sh $args
