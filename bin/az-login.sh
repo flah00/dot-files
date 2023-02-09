@@ -47,6 +47,10 @@ while getopts n:d:t:pfh arg; do
     *) usage ;;
   esac
 done
+if ! type jq &>/dev/null; then
+  echo ERROR jq is not installed, run sudo apt-get install jq 1>&2
+  exit 3
+fi
 
 [[ $(uname -s) = Darwin ]] && stat=$(stat -f '%m' ~/.azure/az.sess) || stat=$(stat -c '%Z' ~/.azure/az.sess)
 now=$(date +%s)

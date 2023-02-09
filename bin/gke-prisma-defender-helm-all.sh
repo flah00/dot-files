@@ -46,6 +46,10 @@ while getopts a:p:m:o:i:S:hy arg; do
     *) usage ;;
   esac
 done
+if ! type jq &>/dev/null; then
+  echo ERROR jq is not installed, run sudo apt-get install jq 1>&2
+  exit 3
+fi
 [[ ! $action ]] && usage
 set -x; gcloud container clusters list --format=json | jq -r '.[] |= [.name, .status]'>$tmp; set +x
 

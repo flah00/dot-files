@@ -42,6 +42,10 @@ while getopts a:s:m:o:i:S:hy arg; do
     *) usage ;;
   esac
 done
+if ! type jq &>/dev/null; then
+  echo ERROR jq is not installed, run sudo apt-get install jq 1>&2
+  exit 3
+fi
 [[ ! $action ]] && usage
 [[ $sub ]] && az account set --subscription $sub
 az aks list --query '[].{cn:name, rg:resourceGroup, state:powerState.code, Owner:tags.Owner, owner:tags.owner }' >$tmp 

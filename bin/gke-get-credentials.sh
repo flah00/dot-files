@@ -30,6 +30,10 @@ while getopts i:c:r:p:ah arg; do
     *) usage ;;
   esac
 done
+if ! type jq &>/dev/null; then
+  echo ERROR jq is not installed, run sudo apt-get install jq 1>&2
+  exit 3
+fi
 
 #if [[ $(gcloud config get project) != $project ]]; then
   #set -x; gcloud config set project $project; set +x
