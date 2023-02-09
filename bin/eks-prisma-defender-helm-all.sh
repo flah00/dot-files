@@ -49,6 +49,7 @@ while getopts a:p:r:i:S:hy arg; do
         w*) worker_os=windows ;;
         *) usage 2 ;;
       esac
+      ;;
     y) yes=-y ;;
     *) usage ;;
   esac
@@ -60,15 +61,13 @@ clusters=($(jq -r '.[].name' $tmp))
 declare -i skipped=0 errors=0 successes=0 total=0
 for cluster in ${clusters[@]}; do
   total+=1
-  cluster_short=$(echo $cluster | sed 's/-cluster$//i')
-  cluster_short=${cluster:0:20}
 
-  echo === $cluster short $cluster_short begin ===
+  echo === $cluster begin ===
   if ! kubectl config use-context $cluster &>/dev/null; then
     echo + eks-get-credentials.sh -p $profile -r $region -i $cluster 
     eks-get-credentials.sh -p $profile -r $region -i $cluster || continue
   fi
-  args="-a $action -c $cluster -n $cluster_short -S $worker_os -C aws"
+  args="-a $action -c $cluster -S $worker_os -C aws"
   [[ $yes ]] && args+=" $yes"
   [[ $cri ]] && args+=" -i $cri"
   echo + prisma-defender-helm.sh $args

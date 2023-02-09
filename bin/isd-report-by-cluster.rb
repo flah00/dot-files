@@ -41,10 +41,11 @@ end
 f.each do |arg|
   s=CSV.open(options[:isd_csv], 'r', headers: true)
   arg=arg.chomp
-  arg+=Time.now.strftime('-%Y-%m-%d') if options[:date]
-  arg+='.csv'
+  output=arg
+  output+=Time.now.strftime('-%Y-%m-%d') if options[:date]
+  output+='.csv'
   print "Checking '#{arg}' "
-  CSV.open(arg, 'wb') do |o|
+  CSV.open(output, 'wb') do |o|
     o << s.first.headers
     r=s.select{|row| 
       row.to_s[/Cluster:\s+[-\w\d,]*#{arg}/i]

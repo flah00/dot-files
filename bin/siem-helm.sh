@@ -80,7 +80,7 @@ while getopts 'a:c:n:C:v:d:r:R:S:Dyh' arg; do
 done
 
 # make sure helm repo is configured ...
-if ! helm repo ls | grep -q ^fluent[[:space:]]; then
+if ! helm repo ls | grep -q "^fluent[[:space:]]"; then
   echo + helm repo add fluent https://fluent.github.io/helm-charts 1>&2
   helm repo add fluent https://fluent.github.io/helm-charts
 fi
