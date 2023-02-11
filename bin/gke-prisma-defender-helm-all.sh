@@ -40,9 +40,9 @@ done
 set -x; gcloud container clusters list --format=json | jq -r '.[] |= [.name, .status]'>$tmp; set +x
 
 if [[ $match ]]; then
-  clusters=($(jq -r '.[].name | select(contains("'"$match"'"))' $tmp))
+  clusters=($(jq -r '.[][0] | select(contains("'"$match"'"))' $tmp))
 else
-  clusters=($(jq -r '.[].name' $tmp))
+  clusters=($(jq -r '.[][0]' $tmp))
 fi
 echo Found ${#clusters[@]}
 if [[ ! -r ~philip.champon/.prisma && ! -r ~/.prisma && ! $yes ]]; then
@@ -62,7 +62,7 @@ delcare -a clusters_skip clusters_error
 TEE=$(mktemp /tmp/${0##*/}XXXX)
 for cluster in ${clusters[@]}; do
   total+=1
-  state=$(jq -r '.[] | select(.name=="'$cluster'") | .status' $tmp)
+  state=$(jq -r '.[] | select(.[0]=="'$cluster'") | .[1]' $tmp)
   cluster_short=$(echo $cluster | sed 's/-cluster$//i')
   cluster_short=${cluster:0:20}
 
@@ -75,7 +75,7 @@ for cluster in ${clusters[@]}; do
       echo -e "\n=== $cluster id $id end ===\n\n"
       continue
     fi
-    if ! kubectl config use-context $cluster || ! gke-get-credentials.sh -i $id; then
+    if ! kubectl config use-context $cluster || ! gke-get-credentials.sh -i $cluster; then
       echo WARN Skipping cluster $cluster, context not defined
       skip $cluster
       echo -e "\n=== $cluster id $id end ===\n\n"
@@ -119,10 +119,10 @@ for cluster in ${clusters[@]}; do
   else
     echo "WARN Skipping cluster $cluster state '$state'"
     skip $cluster
-    echo -e "\n=== $cluster id $id end ===\n\n"
+    echo -e "\n=== $cluster short $cluster_short end ===\n\n"
     continue
   fi
-  echo -e "\n=== $cluster id $id end ===\n\n"
+  echo -e "\n=== $cluster short $cluster_short end ===\n\n"
 done
 
 echo Errors: ${#clusters_error[@]}

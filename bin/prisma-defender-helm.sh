@@ -93,15 +93,15 @@ if [[ $cluster_context ]]; then
         echo + aks-get-credentials.sh -i $cluster_context 1>&2
         # AZEUKS-I-5429-IDVS-Cluster1 -> 5429
         id=$(echo $cluster_context | sed -E 's/[^0-9]*([0-9]{4,})[^0-9].*/\1/')
-        aks-get-credentials.sh -i $id || exit 3
+        aks-get-credentials.sh -i $cluster_context || exit 3
         ;;
       google)
-        echo + gke-get-credentials.sh -i $id 1>&2
-        gke-get-credentials.sh -i $id || exit 3
+        echo + gke-get-credentials.sh -i $cluster_context 1>&2
+        gke-get-credentials.sh -i $cluster_context || exit 3
         ;;
       aws)
-        echo + eks-get-credentials.sh -i $id 1>&2
-        eks-get-credentials.sh -i $id || exit 3
+        echo + eks-get-credentials.sh -i $cluster_context 1>&2
+        eks-get-credentials.sh -i $cluster_context || exit 3
         ;;
       *)
         echo ERROR $cloud not configured 1>&2
