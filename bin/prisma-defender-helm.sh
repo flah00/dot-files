@@ -4,12 +4,13 @@
 # Usage description in getopts section
 #
 # NOTE: This script does not support taints and labels!
+#       But it does limit the daemonset to node_selector.kubernetes\.io/os=linux
 #
 # If you do not specify a cluster context the current context will be used!
 #
 # You will be prompted for a prisma access key id and secret. You can obtain
 # this from the UI. The id and secret can also be read from
-# ~philip.champon/.prisma.
+# ~/.prisma.
 #
 # Install or Upgrade a prisma defender helm chart
 # ./isd_helm.sh -a install -n some-cluster-name
@@ -20,8 +21,8 @@
 # 4. Fetch helm chart from prisma; Verify the chart was successfully fetched
 # 5. Install/upgrade the helm chart
 #
-# Uninstall the caas2 daemonset
-# ./isd_helm.sh -a uninstall_caas2 -c some-context-name
+# Uninstall the yaml daemonset
+# ./isd_helm.sh -a uninstall_yaml -c some-context-name
 # 1. Delete kubernetes objects from twistlock namespace
 trap 'exit 1' TERM INT
 
@@ -34,12 +35,31 @@ function confirm() {
     [[ $accept != "" && ! $accept =~ ^y(es)? ]] && exit 2
   fi
 }
+function usage() {
+  echo ${0##*/} -a ACTION [-c CONTEXT] [-i BOOL] [-y] [-d] [-C CLOUD] [-S OS] [-r REV] [-u URL] [-p PATH] [-P PORT]
+  echo -e "\t-a ACTION  download, install, upgrade, status, pods, uninstall, uninstall_yaml, history, rollback"
+  echo -e "\t-n NAME    The prisma name of the cluster (<= 20 char)"
+  echo -e "\t-c CONTEXT kubectl context helm uses (default is current context)"
+  echo -e "\t-i BOOL    Enable CRI true or false (default automatic)"
+  echo -e "\t-C CLOUD   Cloud platform azure, google, aws (default $cloud)"
+  echo -e "\t-S OS      OS of the node workers: linux or windows (default $worker_os)"
+  echo -e "\t-r REV     Helm history revision number, required when rolling back"
+  echo -e "\t-u URL     The prisma console URL (default $console)"
+  echo -e "\t-p PATH    The Prisma console path prefix (default $console_path)"
+  echo -e "\t-P PORT    The Prisma console port (default $console_port)"
+  echo -e "\t-d         Do not download the helm chart, use the existing file ./twistlock-defender-helm.tar.gz"
+  echo -e "\t-D         Download the chart, do not run helm"
+  echo -e "\t-y         Yes to all prompts"
+  exit
+}
 
-# POV instance: CAAS2 us-west1.cloud.twistlock.com/us-4-161028402
+# POV instance: yaml us-west1.cloud.twistlock.com/us-4-161028402
 # production instance: APP2
+helm_namespace=twistlock
 console=us-east1.cloud.twistlock.com
 console_port=443
 console_path=/us-2-158262739
+worker_os=linux
 if [[ -e ~/.azure && -e ~/.aws ]] || [[ -e ~/.azure && $(type gcloud &>/dev/null) ]] || [[ -e ~/.aws && $(type gcloud &>/dev/null) ]]; then
   :
 elif [[ -e ~/.azure ]]; then
@@ -49,7 +69,7 @@ elif [[ -e ~/.aws ]]; then
 elif [[ $(type gcloud &>/dev/null) ]]; then
   cloud=google
 fi
-while getopts 'a:n:c:C:u:p:P:i:hydD' arg; do
+while getopts 'a:n:c:C:S:r:u:p:P:i:hydD' arg; do
   case $arg in
     D) helm_action=download ;;
     a) helm_action=$OPTARG ;;
@@ -59,29 +79,24 @@ while getopts 'a:n:c:C:u:p:P:i:hydD' arg; do
       case $OPTARG in
         t|true|y|yes|1) cri=true ;;
         f|false|n|no|0) cri=false ;;
+        *) usage 2 ;;
       esac
       ;;
     C) cloud=$OPTARG ;;
+    S)
+      case $OPTARG in
+        l*) worker_os=linux ;;
+        w*) worker_os=windows ;;
+        *) usage 2 ;;
+      esac
+      ;;
+    r) helm_revision=$OPTARG ;;
     y) confirmed=true ;;
     d) downloaded=true ;;
     u) console=$OPTARG ;;
     p) console_path=$OPTARG ;;
     P) console_port=$OPTARG ;;
-    *)
-      echo ${0##*/} -a ACTION -n NAME [-c CONTEXT] [-i BOOL] [-y] [-d] [-C CLOUD] [-u URL] [-p PATH] [-P PORT]
-      echo -e "\t-a ACTION  download, install, upgrade, status, pods, uninstall, uninstall_caas2"
-      echo -e "\t-n NAME    The prisma name of the cluster (<= 20 char)"
-      echo -e "\t-c CONTEXT kubectl context helm uses (default is current context)"
-      echo -e "\t-i BOOL    Enable CRI true or false (default automatic)"
-      echo -e "\t-C CLOUD   Cloud platform azure, google, aws (default $cloud)"
-      echo -e "\t-u URL     The prisma console URL (default $console)"
-      echo -e "\t-p PATH    The Prisma console path prefix (default $console_path)"
-      echo -e "\t-P PORT    The Prisma console port (default $console_port)"
-      echo -e "\t-d         Do not download the helm chart, use the existing file ./twistlock-defender-helm.tar.gz"
-      echo -e "\t-D         Download the chart, do not run helm"
-      echo -e "\t-y         Yes to all prompts"
-      exit
-      ;;
+    *) usage ;;
   esac
 done
 
@@ -91,8 +106,6 @@ if [[ $cluster_context ]]; then
     case $cloud in
       azure)
         echo + aks-get-credentials.sh -i $cluster_context 1>&2
-        # AZEUKS-I-5429-IDVS-Cluster1 -> 5429
-        id=$(echo $cluster_context | sed -E 's/[^0-9]*([0-9]{4,})[^0-9].*/\1/')
         aks-get-credentials.sh -i $cluster_context || exit 3
         ;;
       google)
@@ -118,31 +131,31 @@ fi
 
 case $helm_action in
   uninstall)
-    cur_version=$(helm ls -n twistlock --filter ^twistlock-defender-ds | awk '{print$9}')
+    cur_version=$(helm ls -n $helm_namespace --filter ^twistlock-defender-ds | awk '{print$9}')
     if [[ ! $cur_version ]]; then
       echo ERROR helm chart twistlock-defender-ds is not installed 1>&2
       exit 2
     fi
-    echo UNINSTALL helm chart twistlock-defender-ds version $cur_version from cluster $(kubectl config get-context)
+    echo $(tput setaf 1)UNINSTALL helm chart twistlock-defender-ds version $cur_version from cluster $(kubectl config get-context)$(tput sgr0)
     confirm $confirmed
-    set -x; exec helm uninstall twistlock-defender-ds --namespace twistlock
+    set -x; exec helm uninstall twistlock-defender-ds --namespace $helm_namespace
     ;;
 
   status)
-    set -x; exec helm ls -n twistlock 
+    set -x; exec helm ls -n $helm_namespace 
     ;;
 
   pods)
-    set -x; exec kubectl -n twistlock get pods
+    set -x; exec kubectl --request-timeout=3s -n $helm_namespace get pods
     ;;
 
-  uninstall_caas2)
-    cur_version=$(helm ls -n twistlock --filter ^twistlock-defender-ds | awk '{print$9}')
+  uninstall_yaml)
+    cur_version=$(helm ls -n $helm_namespace --filter ^twistlock-defender-ds | awk '{print$9}')
     if [[ $cur_version ]]; then
       echo ERROR helm was used to install defender, use action uninstall 1>&2
       exit 2
     fi
-    echo Delete proof of concept prisma defender from cluster $(kubectl config current-context)
+    echo $(tput setaf 1)Delete proof of concept prisma defender from cluster $(kubectl config current-context)$(tput sgr0)
     confirm $confirmed
     declare -i ex=0
     set -x
@@ -157,7 +170,7 @@ case $helm_action in
       echo Errors encountered, not waiting for pods to terminate 2>&1
     else
       echo -n Waiting for pods to terminate
-      while [[ $(kubectl -n twistlock get po|wc -l) -gt 1 ]]; do 
+      while [[ $(kubectl -n $helm_namespace get po|wc -l) -gt 1 ]]; do 
         sleep 1
         echo -n .
       done
@@ -166,11 +179,29 @@ case $helm_action in
     exit $ex
     ;;
 
-  install|upgrade|download)
-    if [[ ! $cluster_name ]]; then
-      echo "The -n flag is required" 1>&2
+  history)
+    set -x
+    exec helm history --namespace $helm_namespace $helm_release
+    ;;
+  rollback)
+    [[ ! $helm_revision ]] && echo ERROR rollback requires a revision 1>&2 && usage 2
+    cur_rev=$(helm ls -n $helm_namespace --filter ^$helm_release | awk '{print$3}')
+    if [[ ! $cur_rev ]]; then
+      echo ERROR helm chart $fluent_bit release $helm_release is not installed 1>&2
       exit 2
-    elif [[ ${cluster_name:0:20} != $cluster_name ]]; then
+    elif [[ $cur_rev = $helm_revision ]]; then
+      echo ERROR helm chart $fluent_bit release $helm_release is already at revision $helm_revision 1>&2
+      exit 2
+    fi
+    echo $(tput setaf 1)ROLLBACK helm chart $fluent_bit current revision $cur_version rollback to $helm_revision
+    echo          cluster $(kubectl config current-context)$(tput sgr0)
+    confirm $confirmed
+    set -x
+    exec helm rollback $helm_release $helm_revision --namespace $helm_namespace --recreate-pods --cleanup-on-fail --timeout=5m
+    ;;
+
+  install|upgrade|download)
+    if [[ ${cluster_name:0:20} != $cluster_name ]]; then
       echo ERROR Cluster Name \'$cluster_name\' is more than 20 characters 1>&2
       exit 1
     fi
@@ -234,7 +265,9 @@ case $helm_action in
         done
         echo Setting CRI to $cri
       fi
-      data='{ "orchestration": "kubernetes", "consoleAddr": "'$console:$console_port'", "namespace": "twistlock", "cluster": "'$cluster_name'", "cri": '$cri', "uniqueHostname": true, "serviceAccounts": true }'
+      data='"orchestration": "kubernetes", "consoleAddr": "'$console:$console_port'", "namespace": "'$helm_namespace'", "cri": '$cri', "uniqueHostname": true, "serviceAccounts": true, "nodeSelector": "kubernetes.io/os: \"'$worker_os'\""'
+      [[ $cluster_name ]] && data+=', "cluster": "'$cluster_name'"'
+      data="{$data}"
       echo Submitting request: $data
       echo Fetching helm chart...
       curl -k \
@@ -264,22 +297,23 @@ case $helm_action in
     fi
 
     chart_version=$(helm show chart ./twistlock-defender-helm.tar.gz | grep ^version:)
-    cur_version=$(helm ls -n twistlock --filter ^twistlock-defender-ds | awk '{print$9}')
+    cur_version=$(helm ls -n $helm_namespace --filter ^twistlock-defender-ds | awk '{print$9}')
     # chart-name-0.1.2 -> 0.1.2
     cur_version=${cur_version##*-}
     [[ $cur_version ]] && echo -e "\tcurrent version: $cur_version" || echo -e "\tcurrent version: NOT INSTALLED"
     echo -e "\tnew $chart_version"
     echo CLUSTER CONTEXT $(kubectl config current-context)
-    echo CLUSTER NAME ${cluster_name}
     [[ $helm_action = download ]] && echo "Downloaded twistlock-defender-helm.tar.gz, exiting" && exit 0
     confirm $confirmed
-    echo + helm $helm_action twistlock-defender-ds ./twistlock-defender-helm.tar.gz \
-      --namespace twistlock \
+    echo + helm upgrade twistlock-defender-ds ./twistlock-defender-helm.tar.gz \
+      --namespace $helm_namespace \
+      --install \
       --create-namespace \
       --atomic \
       --timeout=2m
-    helm $helm_action twistlock-defender-ds ./twistlock-defender-helm.tar.gz \
-      --namespace twistlock \
+    helm upgrade twistlock-defender-ds ./twistlock-defender-helm.tar.gz \
+      --namespace $helm_namespace \
+      --install \
       --create-namespace \
       --atomic \
       --timeout=2m

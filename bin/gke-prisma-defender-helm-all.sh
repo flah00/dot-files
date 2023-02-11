@@ -8,19 +8,21 @@ tmp=/tmp/$$.gc.gke.list
 trap 'rm -f $tmp' EXIT
 trap 'exit 1' TERM INT
 function usage() {
-  echo "${0##*/} -a ACTION [-p PROJECT] [-m PATTERN] [-o PATH] [-i BOOL] [-y]"
+  echo "${0##*/} -a ACTION [-p PROJECT] [-m PATTERN] [-o PATH] [-i BOOL] [-S OS] [-y]"
   echo -e "\t-a ACTION  download, install, upgrade, status, pods, uninstall, uninstall_caas2" 
   echo -e "\t-p PROJECT Google project (default $project)"
   echo -e "\t-m PATTERN Only apply the ACTION to cluster names matching PATTERN"
   echo -e "\t-o PATH    Write results to PATH as CSV for owner, status, or pods"
   echo -e "\t-i BOOL    Enable Prisma CRI true or false (default automatic)"
+  echo -e "\t-S OS      OS of the node workers: linux or windows (default $worker_os)"
   echo -e "\t-y         Yes to all prompts"
   exit 1
 }
 function skip() { clusters_skip+=($1); }
 function error() { clusters_error+=($1); }
 
-while getopts a:p:m:o:i:hy arg; do
+worker_os=linux
+while getopts a:p:m:o:i:S:hy arg; do
   case $arg in
     a) action=$OPTARG ;;
     p) gcloud config set project $OPTARG ;;
@@ -30,12 +32,24 @@ while getopts a:p:m:o:i:hy arg; do
       case $OPTARG in
         t|true|y|yes|1) cri=true ;;
         f|false|n|no|0) cri=false ;;
+        *) usage 2 ;;
+      esac
+      ;;
+    S)
+      case $OPTARG in
+        l*) worker_os=linux ;;
+        w*) worker_os=windows ;;
+        *) usage 2 ;;
       esac
       ;;
     y) yes=-y ;;
     *) usage ;;
   esac
 done
+if ! type jq &>/dev/null; then
+  echo ERROR jq is not installed, run sudo apt-get install jq 1>&2
+  exit 3
+fi
 [[ ! $action ]] && usage
 set -x; gcloud container clusters list --format=json | jq -r '.[] |= [.name, .status]'>$tmp; set +x
 
@@ -53,20 +67,18 @@ if [[ ! -r ~philip.champon/.prisma && ! -r ~/.prisma && ! $yes ]]; then
   read accept
   [[ $accept != "" && ! $accept =~ ^y(es)? ]] && exit 2
 fi
-[[ $action = owner && $csv ]] && echo "Cluster,Id,Prisma Name,Owner" > $csv
-[[ $action = status && $csv ]] && echo "Cluster,Id,Prisma Name,Prisma Chart Version" > $csv
-[[ $action = pods && $csv ]] && echo "Cluster,Id,Prisma Name,Prisma Pod Name,Status" > $csv
+[[ $action = owner && $csv ]] && echo "Cluster,Id,Owner" > $csv
+[[ $action = status && $csv ]] && echo "Cluster,Id,Prisma Chart Version" > $csv
+[[ $action = pods && $csv ]] && echo "Cluster,Id,Prisma Pod Name,Status" > $csv
 
 declare -i successes=0 total=0
-delcare -a clusters_skip clusters_error
+declare -a clusters_skip clusters_error
 TEE=$(mktemp /tmp/${0##*/}XXXX)
 for cluster in ${clusters[@]}; do
   total+=1
   state=$(jq -r '.[] | select(.[0]=="'$cluster'") | .[1]' $tmp)
-  cluster_short=$(echo $cluster | sed 's/-cluster$//i')
-  cluster_short=${cluster:0:20}
 
-  echo === $cluster short $cluster_short begin ===
+  echo === $cluster begin ===
 
   if [[ $action = debug ]]; then
     if [[ $state != Running ]]; then
@@ -93,25 +105,25 @@ for cluster in ${clusters[@]}; do
   elif [[ $action = owner ]]; then
     set -x; owner=$(jq -r '.[] | select(.cn=="'$cluster'") | if(.owner) then .owner else .Owner end' $tmp); set +x
     echo Owner $owner
-    [[ $csv ]] && echo "\"$cluster\",$id,\"$cluster_short\",\"$owner\"" >> $csv
+    [[ $csv ]] && echo "\"$cluster\",$id,\"$owner\"" >> $csv
     [[ $owner = null || ! $owner ]] && error $cluster || successes+=1
 
   elif [[ $state = RUNNING ]]; then
-    args="-a $action -c $cluster -n $cluster_short -C google"
+    args="-a $action -c $cluster -S $worker_os -C google"
     [[ $yes ]] && args+=" $yes"
     [[ $cri ]] && args+=" -i $cri"
     echo + prisma-defender-helm.sh $args
     prisma-defender-helm.sh $args | tee $TEE
-    [[ $? -eq 0 ]] && successes+=1 || error $cluster
+    [[ $(echo "${PIPESTATUS[@]}" | tr -s ' ' + | bc) -eq 0 ]] && successes+=1 || error $cluster
     if [[ $csv && $action = status ]]; then
       ver=$(grep twistlock $TEE | awk '{print$9}')
-      echo "\"$cluster\",$id,\"$cluster_short\",\"$ver\"" >> $csv
+      echo "\"$cluster\",$id,\"$ver\"" >> $csv
     elif [[ $csv && $action = pods ]]; then
       ifs="$IFS"
       IFS="
 "
       for p in $(grep twistlock $TEE | awk '{printf "\"%s\",\"%s\"\n", $1, $3}'); do 
-        echo "\"$cluster\",$id,\"$cluster_short\",$p" >> $csv
+        echo "\"$cluster\",$id,$p" >> $csv
       done
       IFS="$ifs"
     fi
@@ -119,10 +131,10 @@ for cluster in ${clusters[@]}; do
   else
     echo "WARN Skipping cluster $cluster state '$state'"
     skip $cluster
-    echo -e "\n=== $cluster short $cluster_short end ===\n\n"
+    echo -e "\n=== $cluster end ===\n\n"
     continue
   fi
-  echo -e "\n=== $cluster short $cluster_short end ===\n\n"
+  echo -e "\n=== $cluster end ===\n\n"
 done
 
 echo Errors: ${#clusters_error[@]}
