@@ -91,7 +91,7 @@ for cluster in ${clusters[@]}; do
       echo -e "\n=== $cluster id $id end ===\n\n"
       continue
     fi
-    nodes=($(kubectl --request-timeout=3s get node -o jsonpath={..name} -l kubernetes.io/os=linux))
+    nodes=($(kubectl --request-timeout=3s get node -o jsonpath={..name} -l kubernetes.io/os=$worker_os))
     for node in ${nodes[@]}; do
       echo $(tput setaf 1)To access the worker node:$(tput sgr0) $(tput rev)exec chroot /host$(tput sgr0)
       echo + kubectl --request-timeout=3s debug node/$node --image=busybox -ti 1>&2
