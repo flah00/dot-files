@@ -1,5 +1,7 @@
 #!/bin/bash
-project=$(gcloud config get project)
+shopt -s expand_aliases
+alias gcloud='gcloud --verbosity error '
+project=${GOOGLE_CLOUD_PROJECT:-$(gcloud config get project)}
 tmp=/tmp/$$.gc.gke.list
 trap 'rm -f $tmp' EXIT
 trap 'exit 1' TERM INT
@@ -11,22 +13,23 @@ function usage() {
   echo -e "\t-c CLUSTER  the name of the cluster, ie AZEUKS-I-5458-OCW-DEV-Cluster"
   echo -e "\t-z ZONE     the name of the google zone, ie us-central1-a"
   echo -e "\t-p PROJECT  the cloud project name (default $project)"
-  echo -e "\t-i          Request the internal ip of the GKE API"
+  echo -e "\t-I          Request the internal ip of the GKE API"
   echo
   echo -e "\tFetch all kubectl configs found in the project"
   echo -e "\t${0##*/} -a"
   echo -e "\tSpecify an id, it will configure cluster name and resource group for you"
-  echo -e "\t${0##*/} -i 5524"
+  echo -e "\t${0##*/} -p PROJECT -i SUBSTRING"
   echo -e "\tSpecify a cluster name and resource group name"
-  echo -e "\t${0##*/} -c AZEUDKS-I-5524-CACT-Cluster -r I-5524-CommandAndControlTower-RG"
+  echo -e "\t${0##*/} -c CLUSTER_NAME -z ZONE"
   exit 1
 }
-while getopts i:c:z:p:ah arg; do
+while getopts i:c:z:p:Iah arg; do
   case $arg in
     i) id=$OPTARG ;;
     c) cn=$OPTARG ;;
     z) zn=$OPTARG ;;
     p) project=$OPTARG ;;
+    I) internal=true ;;
     a) all=true ;;
     *) usage ;;
   esac
@@ -36,9 +39,9 @@ if ! type jq &>/dev/null; then
   exit 3
 fi
 
-#if [[ $(gcloud config get project) != $project ]]; then
-  #set -x; gcloud config set project $project; set +x
-#fi
+if [[ $(gcloud config get project) != $project ]]; then
+  set -x; gcloud config set project $project; set +x
+fi
 
 if [[ $all ]]; then 
   echo Preparing to fetch all kubectl configs for $project
@@ -83,13 +86,14 @@ else
   usage
 fi
 
+[[ $internal ]] && iarg=--internal-ip
 let "n=${#clusters[@]}-1"
 for i in $(seq 0 $n); do
-  [[ $interal ]] && iarg="--internal-ip"
   echo + gcloud container clusters get-credentials $iarg ${clusters[$i]} --zone ${zones[$i]} 1>&2
   gcloud container clusters get-credentials $iarg ${clusters[$i]} --zone ${zones[$i]} 
   # work around gke crappy naming convention
   ctx=$(kubectl config current-context)
+  kubectl config delete-context ${clusters[$i]} &>/dev/null
   echo + kubectl config rename-context $ctx ${clusters[$i]} 1>&2
   kubectl config rename-context $ctx ${clusters[$i]}
 done

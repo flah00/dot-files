@@ -66,7 +66,7 @@ declare -i skipped=0 errors=0 successes=0 total=0
 for cluster in ${clusters[@]}; do
   total+=1
 
-  echo === $cluster begin ===
+  echo $(tput rev)=== $cluster begin ===$(tput sgr0)
   if ! kubectl config use-context $cluster &>/dev/null; then
     echo + eks-get-credentials.sh -p $profile -r $region -i $cluster 
     eks-get-credentials.sh -p $profile -r $region -i $cluster || continue

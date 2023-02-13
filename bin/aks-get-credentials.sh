@@ -1,5 +1,5 @@
 #!/bin/bash
-sub=b1e119d0-b7fa-451d-af39-0611d33b30dc
+sub=$(az account show | jq -r .id)
 tmp=/tmp/$$.az.aks.list
 trap 'rm -f $tmp' EXIT
 trap 'exit 1' TERM INT
