@@ -9,7 +9,7 @@
 # You must specify at least one input
 # -i CSV   An ISD Container Vulnerability CSV
 #          Download the XLS and convert it to CSV
-#          https://isd.accenture.com/issues?issueSubcategories=CONTAINERS__Container%26nbspCompliance%20CONTAINERS__Container%26nbspHost%26nbspCompliance%20CONTAINERS__Container%26nbspHost%26nbspVulnerabilities%20CONTAINERS__Container%26nbspImage%26nbspVulnerabilities&isBeta=true&isSecurityException=false&isFalsePositive=false&issueProgress=OPEN&isAllowedList=false&isAstr=null
+#          https://isd.accenture.com/issues?issueSubcategories=CONTAINERS__Container%26nbspCompliance%20CONTAINERS__Container%26nbspHost%26nbspCompliance%20CONTAINERS__Container%26nbspHost%26nbspVulnerabilities%20CONTAINERS__Container%26nbspImage%26nbspVulnerabilities&isBeta=false&isSecurityException=false&isFalsePositive=false&issueProgress=OPEN&isAllowedList=false&isAstr=null
 # You may optionally specify the cluster names to extract
 # -c INPUT A file, each line is a cluster name, ie
 #          AZEUDKS-I-5524-CACT
@@ -17,8 +17,8 @@
 require 'csv'
 require 'pp'
 require 'optparse'
-require 'byebug'
-options = {date: false}
+#require 'byebug'
+options = {date: false, sites: []}
 OptionParser.new do |opts|
   opts.on('-c INPUT', '--clusters INPUT', 'file, each line is a cluster name') do |v|
     options[:clusters] = v
@@ -26,20 +26,29 @@ OptionParser.new do |opts|
   opts.on('-i CSV', '--isd-csv CSV', 'csv input') do |v|
     options[:isd_csv] = v
   end
+  opts.on('-s SITEID', '--site SITEID', 'file, each line is a cluster name') do |v|
+    options[:sites] += v.split(',')
+  end
   opts.on('--date', 'include today\'s date in the filename') do |v|
     options[:date] = true
   end
 end.parse!
 
 if options[:clusters].nil?
-  f=`grep 'Cluster:' "#{options[:isd_csv]}" | sed 's/Cluster: //'`.chomp
-  f=f.split(/[,\n]/).sort.uniq
+  f=[]
+  File.open(options[:isd_csv], 'r') do |file|
+    file.each_line do |line|
+      line[/Cluster:(.*)/] and f += $1.split(/[,\n]/)
+    end
+  end
+  f=f.compact.sort.uniq
 else
   f=File.open(options[:clusters], 'r') 
 end
 
 f.each do |arg|
   s=CSV.open(options[:isd_csv], 'r', headers: true)
+  arg.gsub!(/\s/, '')
   arg=arg.chomp
   output=arg
   output+=Time.now.strftime('-%Y-%m-%d') if options[:date]
@@ -47,12 +56,13 @@ f.each do |arg|
   print "Checking '#{arg}' "
   CSV.open(output, 'wb') do |o|
     o << s.first.headers
-    r=s.select{|row| 
+    # find the rows in the source
+    r=s.select do |row| 
       row.to_s[/Cluster:\s+[-\w\d,]*#{arg}/i]
-    }
-    r.each{|row| 
-      o << row
-    }
+    end
+    # add the found rows to the output
+    r.each{|row| o << row }
     puts "found #{r.count} rows"
   end
 end
+
