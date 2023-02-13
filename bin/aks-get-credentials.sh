@@ -22,7 +22,7 @@ function usage() {
 }
 while getopts i:c:r:s:ah arg; do
   case $arg in
-    i) id=$OPTARG ;;
+    i) id=${OPTARG%-admin} ;;
     c) cn=$OPTARG ;;
     r) rg=$OPTARG ;;
     s) sub=$OPTARG ;;
@@ -59,7 +59,7 @@ elif [[ $id ]]; then
   set -x; az aks list --query '[].{cn:name, rg:resourceGroup}' >$tmp ; set +x
   # only select the cluster and resource group that matches the id
   clusters=($(jq -r '.[].cn | select(contains("'$id'"))' $tmp))
-  resources=($(jq -r '.[].rg | select(contains("'$id'"))' $tmp))
+  resources=($(jq -r '.[] | select(.cn == "'${clusters[0]}'") | .rg' $tmp))
   if [[ ${#clusters[@]} -ne ${#resources[@]} || ! ${clusters[0]} || ! ${resources[0]} ]]; then
     echo Missing one or both from az aks list
     echo Found "cluster '${clusters[@]}' ${#clusters[@]}"
