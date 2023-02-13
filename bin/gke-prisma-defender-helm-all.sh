@@ -2,6 +2,8 @@
 # Apply the given action to all of the clusters for the given subscription
 # -a ACTION install, upgrade, uninstall, uninstall_caas2
 # -s SUB azure subscription
+shopt -s expand_aliases
+alias gcloud='gcloud --verbosity error '
 shopt -s nocasematch
 tmp=/tmp/$$.gc.gke.list
 trap 'rm -f $tmp' EXIT
@@ -25,8 +27,17 @@ worker_os=linux
 while getopts a:z:p:m:o:i:S:hy arg; do
   case $arg in
     a) action=$OPTARG ;;
-    z) zone=$OPTARG ;;
-    p) gcloud config set project $OPTARG ;;
+    z) 
+      zone=$OPTARG 
+      case $zone in
+        us-central1*) project_ignore='prod' ;;
+        us-east1*) project_ignore='dev' ;;
+      esac
+      ;;
+    p) 
+      gcloud config set project $OPTARG 
+      export GOOGLE_CLOUD_PROJECT=$OPTARG
+      ;;
     m) match=$OPTARG ;;
     o) csv=$OPTARG ;;
     i) 
@@ -57,7 +68,7 @@ declare -a projects
 if [[ $project ]]; then
   projects=($project)
 else
-  projects=$(gcloud projects list --format='value(projectId)')
+  projects=$(gcloud projects list --format='value(projectId)' | grep -v $project_ignore)
 fi
 
 if [[ ! -r ~philip.champon/.prisma && ! -r ~/.prisma && ! $yes ]]; then
@@ -71,6 +82,9 @@ fi
 declare -i successes=0 total=0
 declare -a clusters_skip clusters_error
 TEE=$(mktemp /tmp/${0##*/}XXXX)
+[[ $action = owner && $csv ]] && echo "Cluster,Id,Owner" > $csv
+[[ $action = status && $csv ]] && echo "Cluster,Id,Prisma Chart Version" > $csv
+[[ $action = pods && $csv ]] && echo "Cluster,Id,Prisma Pod Name,Status" > $csv
 [[ $zone ]] && filter="zone ~ $zone"
 for project in ${projects[@]}; do
   set -x
@@ -84,15 +98,12 @@ for project in ${projects[@]}; do
     clusters=($(jq -r '.[].name' $tmp))
   fi
   echo Found ${#clusters[@]} in project $project
-  [[ $action = owner && $csv ]] && echo "Cluster,Id,Owner" > $csv
-  [[ $action = status && $csv ]] && echo "Cluster,Id,Prisma Chart Version" > $csv
-  [[ $action = pods && $csv ]] && echo "Cluster,Id,Prisma Pod Name,Status" > $csv
 
   for cluster in ${clusters[@]}; do
     total+=1
     state=$(jq -r '.[] | select(.name=="'$cluster'") | .status' $tmp)
 
-    echo === $cluster begin ===
+    echo $(tput rev)=== $cluster begin ===$(tput sgr0)
 
     if [[ $action = debug ]]; then
       if [[ $state != Running ]]; then
@@ -101,7 +112,7 @@ for project in ${projects[@]}; do
         echo -e "\n=== $cluster id $id end ===\n\n"
         continue
       fi
-      if ! kubectl config use-context $cluster || ! gke-get-credentials.sh -i $cluster; then
+      if ! kubectl config use-context $cluster || ! gke-get-credentials.sh -I -i $cluster; then
         echo WARN Skipping cluster $cluster, context not defined
         skip $cluster
         echo -e "\n=== $cluster id $id end ===\n\n"

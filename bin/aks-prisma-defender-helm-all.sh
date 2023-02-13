@@ -77,7 +77,7 @@ for cluster in ${clusters[@]}; do
   # AZEUKS-I-5429-IDVS-Cluster1 -> 5429
   id=$(echo $cluster | sed -E 's/[^0-9]*([0-9]{4,})[^0-9].*/\1/')
 
-  echo === $cluster id $id begin ===
+  echo $(tput rev)=== $cluster id $id begin ===
   if [[ $action = debug ]]; then
     if [[ $state != Running ]]; then
       echo "WARN Skipping cluster $cluster state '$state'"

@@ -109,8 +109,8 @@ if [[ $cluster_context ]]; then
         aks-get-credentials.sh -i $cluster_context || exit 3
         ;;
       google)
-        echo + gke-get-credentials.sh -i $cluster_context 1>&2
-        gke-get-credentials.sh -i $cluster_context || exit 3
+        echo + gke-get-credentials.sh -I -i $cluster_context 1>&2
+        gke-get-credentials.sh -I -i $cluster_context || exit 3
         ;;
       aws)
         echo + eks-get-credentials.sh -i $cluster_context 1>&2
@@ -142,6 +142,8 @@ case $helm_action in
     ;;
 
   status)
+    # quickly verify if k8s API is reachable
+    kubectl --request-timeout=3s get node >/dev/null || exit 3
     set -x; exec helm ls -n $helm_namespace 
     ;;
 
