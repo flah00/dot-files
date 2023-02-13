@@ -20,8 +20,8 @@ usage() {
   exit ${1:-0}
 }
 get_tenants() {
-  echo + az account list --query '[].{name:name, tenantId:tenantId, user:user.name}' 1>&2
-  az account list --query '[].{name:name, tenantId:tenantId, user:user.name}' > $OUTPUT
+  echo + az account list --query '[].{name:name, tenantId:tenantId, user:user.name default:isDefault}' 1>&2
+  az account list --query '[].{name:name, tenantId:tenantId, user:user.name, default:isDefault}' > $OUTPUT
 }
 get_tenant_id_by_name() {
   [[ ! -s $OUTPUT ]] && get_tenants
@@ -47,16 +47,20 @@ while getopts n:d:t:pfh arg; do
     *) usage ;;
   esac
 done
+if ! type jq &>/dev/null; then
+  echo ERROR jq is not installed, run sudo apt-get install jq 1>&2
+  exit 3
+fi
 
-[[ $(uname -s) = Darwin ]] && stat=$(stat -f '%m' ~/.azure/az.sess) || stat=$(stat -c '%Z' ~/.azure/az.sess)
-now=$(date +%s)
-## session file written to more than 12h ago
-[[ ! $force && $((now-stat)) -lt $((now-43200)) ]] && echo You seem to be logged in && exit
+#[[ $(uname -s) = Darwin ]] && stat=$(stat -f '%m' ~/.azure/az.sess) || stat=$(stat -c '%Z' ~/.azure/az.sess)
+#now=$(date +%s)
+### session file written to more than 12h ago
+#[[ ! $force && $((now-stat)) -lt $((now-43200)) ]] && echo You seem to be logged in && exit
 
 if [[ $print ]]; then
   get_tenants
   echo Available tenants
-  jq -r '.[] | "name: \(.name) id: \(.tenantId) "' $OUTPUT
+  jq -r '.[] | "name: \(.name) id: \(.tenantId) default: \(.default)"' $OUTPUT
 elif [[ $tenant ]]; then
   echo + az login --tenant $tenant 1>&2
   az login --tenant $tenant

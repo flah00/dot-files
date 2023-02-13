@@ -1,16 +1,17 @@
 #!/bin/bash
-project=tfo-us-dev-va-macaron
+project=$(gcloud config get project)
 tmp=/tmp/$$.gc.gke.list
 trap 'rm -f $tmp' EXIT
 trap 'exit 1' TERM INT
 function usage() {
   echo "Get kubectl configs for a cluster or all known clusters in the project"
-  echo "${0##*/} {-a | -i ID | -c CLUSTER -z ZONE} [-p PROJECT]"
+  echo "${0##*/} {-a | -i ID | -c CLUSTER -z ZONE} [-p PROJECT] [-i]"
   echo -e "\t-a          configure all of the clusters"
   echo -e "\t-i ID       the cluster ID, ie 5524"
   echo -e "\t-c CLUSTER  the name of the cluster, ie AZEUKS-I-5458-OCW-DEV-Cluster"
   echo -e "\t-z ZONE     the name of the google zone, ie us-central1-a"
   echo -e "\t-p PROJECT  the cloud project name (default $project)"
+  echo -e "\t-i          Request the internal ip of the GKE API"
   echo
   echo -e "\tFetch all kubectl configs found in the project"
   echo -e "\t${0##*/} -a"
@@ -20,16 +21,20 @@ function usage() {
   echo -e "\t${0##*/} -c AZEUDKS-I-5524-CACT-Cluster -r I-5524-CommandAndControlTower-RG"
   exit 1
 }
-while getopts i:c:r:p:ah arg; do
+while getopts i:c:z:p:ah arg; do
   case $arg in
     i) id=$OPTARG ;;
     c) cn=$OPTARG ;;
-    r) zn=$OPTARG ;;
+    z) zn=$OPTARG ;;
     p) project=$OPTARG ;;
     a) all=true ;;
     *) usage ;;
   esac
 done
+if ! type jq &>/dev/null; then
+  echo ERROR jq is not installed, run sudo apt-get install jq 1>&2
+  exit 3
+fi
 
 #if [[ $(gcloud config get project) != $project ]]; then
   #set -x; gcloud config set project $project; set +x
@@ -37,7 +42,8 @@ done
 
 if [[ $all ]]; then 
   echo Preparing to fetch all kubectl configs for $project
-  set -x; gcloud container clusters list --format=json >$tmp ; set +x
+  [[ $zn ]] && zarg="--zone $zn"
+  set -x; gcloud container clusters list $zarg --format=json >$tmp ; set +x
   # select all of the cluster names and zones
   clusters=($(jq -r '.[].name' $tmp))
   zones=($(jq -r '.[].zone' $tmp))
@@ -62,7 +68,7 @@ elif [[ $id ]]; then
   fi
 
 elif [[ $cn && $zn ]]; then
-  echo Configuring cluster $cn with zones $zn in $project
+  echo Configuring cluster $cn with zone $zn in $project
   clusters=($cn)
   zones=($zn)
   if [[ ${#clusters[@]} -ne ${#zones[@]} || ! ${clusters[0]} || ! ${zones[0]} ]]; then
@@ -79,7 +85,11 @@ fi
 
 let "n=${#clusters[@]}-1"
 for i in $(seq 0 $n); do
-  set -x
-  gcloud container clusters get-credentials ${clusters[$i]} --zone ${zones[$i]} 
-  set +x
+  [[ $interal ]] && iarg="--internal-ip"
+  echo + gcloud container clusters get-credentials $iarg ${clusters[$i]} --zone ${zones[$i]} 1>&2
+  gcloud container clusters get-credentials $iarg ${clusters[$i]} --zone ${zones[$i]} 
+  # work around gke crappy naming convention
+  ctx=$(kubectl config current-context)
+  echo + kubectl config rename-context $ctx ${clusters[$i]} 1>&2
+  kubectl config rename-context $ctx ${clusters[$i]}
 done

@@ -54,6 +54,10 @@ while getopts a:p:r:i:S:hy arg; do
     *) usage ;;
   esac
 done
+if ! type jq &>/dev/null; then
+  echo ERROR jq is not installed, run sudo apt-get install jq 1>&2
+  exit 3
+fi
 [[ ! $action ]] && usage
 describe_all
 

@@ -31,6 +31,10 @@ while getopts i:c:r:s:ah arg; do
   esac
 done
 
+if ! type jq &>/dev/null; then
+  echo ERROR jq is not installed, run sudo apt-get install jq 1>&2
+  exit 3
+fi
 stat=$(stat -c '%Z' ~/.azure/az.sess)
 now=$(date +%s)
 ## session file written to more than 12h ago

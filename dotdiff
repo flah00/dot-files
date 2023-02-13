@@ -15,4 +15,3 @@ else
     diff -ub $file ~/${file##*/} 2>/dev/null
   done) | less -E -X
 fi
-
