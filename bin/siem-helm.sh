@@ -5,6 +5,8 @@
 # 3. confirm action
 # 4. helm install/upgrade/uninstall
 trap 'exit 1' TERM INT
+shopt -s expand_aliases
+kubectl='kubectl --request-timeout=3s'
 
 # a base64 gzip file of the soc.yaml values file
 function create_values() {
@@ -167,7 +169,7 @@ case $helm_action in
     ;;
   pods)
     set -x
-    exec kubectl --request-timeout=3s --namespace $helm_namespace get pods
+    exec kubectl --namespace $helm_namespace get pods
     ;;
   history)
     set -x

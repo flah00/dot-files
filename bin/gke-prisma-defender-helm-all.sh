@@ -4,6 +4,7 @@
 # -s SUB azure subscription
 shopt -s expand_aliases
 alias gcloud='gcloud --verbosity error '
+kubectl='kubectl --request-timeout=3s'
 shopt -s nocasematch
 tmp=/tmp/$$.gc.gke.list
 trap 'rm -f $tmp' EXIT
@@ -118,13 +119,13 @@ for project in ${projects[@]}; do
         echo -e "\n=== $cluster id $id end ===\n\n"
         continue
       fi
-      nodes=($(kubectl --request-timeout=3s get node -o jsonpath={..name} -l kubernetes.io/os=$worker_os))
+      nodes=($(kubectl get node -o jsonpath={..name} -l kubernetes.io/os=$worker_os))
       for node in ${nodes[@]}; do
         echo $(tput setaf 1)To access the worker node:$(tput sgr0) $(tput rev)exec chroot /host$(tput sgr0)
         echo + kubectl --request-timeout=3s debug node/$node --image=busybox -ti 1>&2
-        kubectl --request-timeout=3s debug node/$node --image=busybox -ti
+        kubectl debug node/$node --image=busybox -ti
         [[ $? -eq 0 ]] && successes+=1 || error $cluster
-        #kubectl --request-timeout=3s delete pod -l app=debug
+        #kubectl delete pod -l app=debug
       done
 
     elif [[ $action = owner ]]; then

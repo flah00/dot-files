@@ -25,6 +25,8 @@
 # ./isd_helm.sh -a uninstall_yaml -c some-context-name
 # 1. Delete kubernetes objects from twistlock namespace
 trap 'exit 1' TERM INT
+shopt -s expand_aliases
+kubectl='kubectl --request-timeout=3s'
 
 function confirm() {
   confirmed=$1
@@ -143,12 +145,12 @@ case $helm_action in
 
   status)
     # quickly verify if k8s API is reachable
-    kubectl --request-timeout=3s get node >/dev/null || exit 3
+    kubectl get node >/dev/null || exit 3
     set -x; exec helm ls -n $helm_namespace 
     ;;
 
   pods)
-    set -x; exec kubectl --request-timeout=3s -n $helm_namespace get pods
+    set -x; exec kubectl -n $helm_namespace get pods
     ;;
 
   uninstall_yaml)
@@ -161,11 +163,11 @@ case $helm_action in
     confirm $confirmed
     declare -i ex=0
     set -x
-    kubectl --request-timeout=3s delete clusterrolebinding twistlock-view-binding
+    kubectl delete clusterrolebinding twistlock-view-binding
     ex+=$?
-    kubectl --request-timeout=3s delete clusterrole twistlock-view
+    kubectl delete clusterrole twistlock-view
     ex+=$?
-    kubectl --request-timeout=3s delete ns twistlock
+    kubectl delete ns twistlock
     ex+=$?
     set +x
     if [[ $ex -ne 0 ]]; then
@@ -259,7 +261,7 @@ case $helm_action in
         # only linux is supported, so let's not consult runtime of potential windows workers
         # don't forget, there could be multiple node pools running different OS/container runtimes 
         echo + kubectl --request-timeout=3s get node -l kubernetes.io/os=linux -o jsonpath='{..containerRuntimeVersion}' 1>&2
-        runtimes=($(kubectl --request-timeout=3s get node -l kubernetes.io/os=linux -o jsonpath='{..containerRuntimeVersion}'))
+        runtimes=($(kubectl get node -l kubernetes.io/os=linux -o jsonpath='{..containerRuntimeVersion}'))
         [[ $? -ne 0 ]] && echo ERROR failed to determine CRI, re-run the previous command and set -i flag to false if output is docker: or true otherwise && exit 3
         for runtime in ${runtimes[@]}; do
           # if the container runtime isn't docker we set CRI to true
