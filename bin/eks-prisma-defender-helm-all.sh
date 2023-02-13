@@ -21,7 +21,7 @@ function describe_all() {
 
 function usage() {
   echo "${0##*/} -a ACTION [-p PROFILE] [-r REGION] [-i BOOL] [-S OS] [-y]"
-  echo -e "\t-a ACTION  owner, download, install, upgrade, uninstall, uninstall_caas2"
+  echo -e "\t-a ACTION  owner, download, install, upgrade, uninstall, uninstall_yaml"
   echo -e "\t-p PROFILE AWS profile (default $profile)"
   echo -e "\t-r REGION  AWS region (default $region)"
   echo -e "\t-i BOOL    Enable Prisma CRI true or false (default automatic)"

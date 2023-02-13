@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Apply the given action to all of the clusters for the given subscription
-# -a ACTION install, upgrade, uninstall, uninstall_caas2
+# -a ACTION install, upgrade, uninstall, uninstall_yaml
 # -s SUB azure subscription
 shopt -s nocasematch
 tmp=/tmp/$$.gc.gke.list
@@ -8,7 +8,7 @@ trap 'rm -f $tmp' EXIT
 trap 'exit 1' TERM INT
 function usage() {
   echo "${0##*/} -a ACTION [-z ZONE] [-p PROJECT] [-m PATTERN] [-o PATH] [-i BOOL] [-S OS] [-y]"
-  echo -e "\t-a ACTION  download, install, upgrade, status, pods, uninstall, uninstall_caas2" 
+  echo -e "\t-a ACTION  download, install, upgrade, status, pods, uninstall, uninstall_yaml" 
   echo -e "\t-z ZONE    Google zone to search"
   echo -e "\t-p PROJECT Google project (default ALL)"
   echo -e "\t-m PATTERN Only apply the ACTION to cluster names matching PATTERN"

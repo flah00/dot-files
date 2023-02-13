@@ -6,7 +6,7 @@ trap 'rm -f $tmp' EXIT
 trap 'exit 1' TERM INT
 function usage() {
   echo "${0##*/} -a ACTION [-s SUB] [-m PATTERN] [-o PATH] [-i BOOL] [-S OS] [-y]"
-  echo -e "\t-a ACTION  owner, download, install, upgrade, status, pods, uninstall, uninstall_caas2" 
+  echo -e "\t-a ACTION  owner, download, install, upgrade, status, pods, uninstall, uninstall_yaml" 
   echo -e "\t-m PATTERN Only apply the ACTION to cluster names matching PATTERN"
   echo -e "\t-s SUB     Azure subscription (default $sub)"
   echo -e "\t-o PATH    Write results to PATH as CSV for owner, status, or pods"
