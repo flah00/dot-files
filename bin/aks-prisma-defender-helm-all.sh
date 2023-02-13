@@ -77,7 +77,7 @@ for cluster in ${clusters[@]}; do
   # AZEUKS-I-5429-IDVS-Cluster1 -> 5429
   id=$(echo $cluster | sed -E 's/[^0-9]*([0-9]{4,})[^0-9].*/\1/')
 
-  echo $(tput rev)=== $cluster id $id begin ===
+  echo $(tput rev)=== $cluster id $id begin ===$(tput sgr0)
   if [[ $action = debug ]]; then
     if [[ $state != Running ]]; then
       echo "WARN Skipping cluster $cluster state '$state'"
@@ -116,6 +116,10 @@ for cluster in ${clusters[@]}; do
     if [[ $csv && $action = status ]]; then
       ver=$(grep twistlock $TEE | awk '{print$9}')
       echo "\"$cluster\",$id,\"$ver\"" >> $csv
+    # no pods in results, mark existence of cluster
+    elif [[ $csv && $action = pods && $(wc -l $TEE| awk '{print$1}') -lt 1 ]]; then
+      echo "\"$cluster\",$id,NO PODS" >> $csv
+    # record results of pods
     elif [[ $csv && $action = pods ]]; then
       ifs="$IFS"
       IFS="
