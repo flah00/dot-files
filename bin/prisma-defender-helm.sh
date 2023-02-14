@@ -36,7 +36,7 @@ function confirm() {
   fi
 }
 function usage() {
-  echo ${0##*/} -a ACTION [-c CONTEXT] [-i BOOL] [-y] [-d] [-C CLOUD] [-S OS] [-r REV] [-u URL] [-p PATH] [-P PORT]
+  echo ${0##*/} -a ACTION [-c CONTEXT] [-i BOOL] [-y] [-d] [-C CLOUD] [-S OS] [-r REV] [-u URL] [-p PATH] [-P PORT] [-A]
   echo -e "\t-a ACTION  download, install, upgrade, status, pods, uninstall, uninstall_yaml, history, rollback"
   echo -e "\t-n NAME    The prisma name of the cluster (<= 20 char)"
   echo -e "\t-c CONTEXT kubectl context helm uses (default is current context)"
@@ -49,6 +49,7 @@ function usage() {
   echo -e "\t-P PORT    The Prisma console port (default $console_port)"
   echo -e "\t-d         Do not download the helm chart, use the existing file ./twistlock-defender-helm.tar.gz"
   echo -e "\t-D         Download the chart, do not run helm"
+  echo -e "\t-A         GKE Autopilot Cluster"
   echo -e "\t-y         Yes to all prompts"
   exit
 }
@@ -69,7 +70,7 @@ elif [[ -e ~/.aws ]]; then
 elif [[ $(type gcloud &>/dev/null) ]]; then
   cloud=google
 fi
-while getopts 'a:n:c:C:S:r:u:p:P:i:hydD' arg; do
+while getopts 'a:n:c:C:S:r:u:p:P:i:hydDA' arg; do
   case $arg in
     D) helm_action=download ;;
     a) helm_action=$OPTARG ;;
@@ -96,6 +97,7 @@ while getopts 'a:n:c:C:S:r:u:p:P:i:hydD' arg; do
     u) console=$OPTARG ;;
     p) console_path=$OPTARG ;;
     P) console_port=$OPTARG ;;
+    A) autopilot=true ;;
     *) usage ;;
   esac
 done
@@ -136,7 +138,7 @@ case $helm_action in
       echo ERROR helm chart twistlock-defender-ds is not installed 1>&2
       exit 2
     fi
-    echo $(tput setaf 1)UNINSTALL helm chart twistlock-defender-ds version $cur_version from cluster $(kubectl config get-context)$(tput sgr0)
+    echo $(tput setaf 1)UNINSTALL helm chart twistlock-defender-ds version $cur_version from cluster $(kubectl config current-context)$(tput sgr0)
     confirm $confirmed
     set -x; exec helm uninstall twistlock-defender-ds --namespace $helm_namespace
     ;;
@@ -269,6 +271,11 @@ case $helm_action in
       fi
       data='"orchestration": "kubernetes", "consoleAddr": "'$console:$console_port'", "namespace": "'$helm_namespace'", "cri": '$cri', "uniqueHostname": true, "serviceAccounts": true, "nodeSelector": "kubernetes.io/os: \"'$worker_os'\""'
       [[ $cluster_name ]] && data+=', "cluster": "'$cluster_name'"'
+      [[ $autopilot ]] && data+=', "gkeAutopilot": true'
+      # NOTE: these are not enabled yet...
+      [[ $istio ]] && data+=', "istio": true'
+      [[ $selinux ]] && data+=', "selinux": true'
+      [[ $pod_labels ]] && data+=', "collectPodLabels": true'
       data="{$data}"
       echo Submitting request: $data
       echo Fetching helm chart...

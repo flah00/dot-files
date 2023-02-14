@@ -5,6 +5,10 @@
 shopt -s expand_aliases
 alias gcloud='gcloud --verbosity error '
 shopt -s nocasematch
+# projects/157690393260/zones/us-central1-a -> us-central1-a
+zone=$(curl --silent http://metadata/computeMetadata/v1/instance/zone -H "Metadata-Flavor: Google" | sed 's,.*/,,')
+# zone to region...
+zone=${zone%-[a-z]}
 tmp=/tmp/$$.gc.gke.list
 trap 'rm -f $tmp' EXIT
 trap 'exit 1' TERM INT
@@ -28,12 +32,7 @@ while getopts a:z:p:m:o:i:S:hy arg; do
   case $arg in
     a) action=$OPTARG ;;
     z) 
-      zone=$OPTARG 
-      case $zone in
-        us-central1*) project_ignore='prod' ;;
-        us-east1*) project_ignore='dev' ;;
-      esac
-      ;;
+      zone=$OPTARG ;;
     p) 
       gcloud config set project $OPTARG 
       export GOOGLE_CLOUD_PROJECT=$OPTARG
@@ -62,13 +61,23 @@ if ! type jq &>/dev/null; then
   echo ERROR jq is not installed, run sudo apt-get install jq 1>&2
   exit 3
 fi
+case $zone in
+  us-central1*) project_ignore='prod|eu-dev' ;;
+  europe-west3*) project_ignore='prod|us-dev' ;;
+  us-east1*) project_ignore='dev|eu-prod' ;;
+  europe-west1*) project_ignore='dev|us-prod' ;;
+  *) echo WARN Unsupported zone \'$zone\' 1>&2 ;;
+esac
 [[ ! $action ]] && usage
 
 declare -a projects
-if [[ $project ]]; then
-  projects=($project)
+if [[ $GOOGLE_CLOUD_PROJECT ]]; then
+  projects=($GOOGLE_CLOUD_PROJECT)
+elif [[ ! $project_ignore ]]; then
+  echo WARN Not filtering projects, try specifying a zone or region 1>&2
+  projects=$(gcloud projects list --format='value(projectId)')
 else
-  projects=$(gcloud projects list --format='value(projectId)' | grep -v $project_ignore)
+  projects=$(gcloud projects list --format='value(projectId)' | grep -Ev "$project_ignore")
 fi
 
 if [[ ! -r ~philip.champon/.prisma && ! -r ~/.prisma && ! $yes ]]; then
@@ -82,14 +91,14 @@ fi
 declare -i successes=0 total=0
 declare -a clusters_skip clusters_error
 TEE=$(mktemp /tmp/${0##*/}XXXX)
-[[ $action = owner && $csv ]] && echo "Cluster,Id,Owner" > $csv
-[[ $action = status && $csv ]] && echo "Cluster,Id,Prisma Chart Version" > $csv
-[[ $action = pods && $csv ]] && echo "Cluster,Id,Prisma Pod Name,Status" > $csv
+[[ $action = owner && $csv ]] && echo "Cluster,Owner" > $csv
+[[ $action = status && $csv ]] && echo "Cluster,Prisma Chart Version" > $csv
+[[ $action = pods && $csv ]] && echo "Cluster,Prisma Pod Name,Status" > $csv
 [[ $zone ]] && filter="zone ~ $zone"
 for project in ${projects[@]}; do
   set -x
   gcloud config set project $project
-  gcloud container clusters list --filter="$filter" --format='json(name,status,zone,resourceLabels.owner,resourceLabels.Owner)'  >$tmp
+  gcloud container clusters list --filter="$filter" --format='json(name,status,zone,autopilot.enabled,resourceLabels.owner,resourceLabels.Owner)'  >$tmp
   set +x
 
   if [[ $match ]]; then
@@ -102,6 +111,8 @@ for project in ${projects[@]}; do
   for cluster in ${clusters[@]}; do
     total+=1
     state=$(jq -r '.[] | select(.name=="'$cluster'") | .status' $tmp)
+    autopilot=$(jq -r '.[] | select(.name=="'$cluster'") | .autopilot.enabled' $tmp)
+    [[ $autopilot != true ]] && unset autopilot
 
     echo $(tput rev)=== $cluster begin ===$(tput sgr0)
 
@@ -133,25 +144,30 @@ for project in ${projects[@]}; do
       owner=${owner//_/.}
       owner=${owner//-/ }
       echo Owner $owner
-      [[ $csv ]] && echo "\"$cluster\",$id,\"$owner\"" >> $csv
+      [[ $csv ]] && echo "\"$cluster\",\"$owner\"" >> $csv
       [[ $owner = null || ! $owner ]] && error $cluster || successes+=1
 
     elif [[ $state = RUNNING ]]; then
       args="-a $action -c $cluster -S $worker_os -C google"
       [[ $yes ]] && args+=" $yes"
       [[ $cri ]] && args+=" -i $cri"
+      [[ $autopilot ]] && args+=" -A"
       echo + prisma-defender-helm.sh $args
       prisma-defender-helm.sh $args | tee $TEE
       [[ $(echo "${PIPESTATUS[@]}" | tr -s ' ' + | bc) -eq 0 ]] && successes+=1 || error $cluster
       if [[ $csv && $action = status ]]; then
         ver=$(grep twistlock $TEE | awk '{print$9}')
-        echo "\"$cluster\",$id,\"$ver\"" >> $csv
+        echo "\"$cluster\",\"$ver\"" >> $csv
+      # mark clusters that lack pods
+      elif [[ $csv && $action = pods && $(wc -l $TEE| awk '{print$1}') -lt 2 ]]; then
+        echo "\"$cluster\",,NO PODS" >> $csv
+      # or collec details
       elif [[ $csv && $action = pods ]]; then
         ifs="$IFS"
         IFS="
         "
         for p in $(grep twistlock $TEE | awk '{printf "\"%s\",\"%s\"\n", $1, $3}'); do 
-          echo "\"$cluster\",$id,$p" >> $csv
+          echo "\"$cluster\",$p" >> $csv
         done
         IFS="$ifs"
       fi
