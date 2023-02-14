@@ -6,7 +6,7 @@
 # 4. helm install/upgrade/uninstall
 trap 'exit 1' TERM INT
 shopt -s expand_aliases
-kubectl='kubectl --request-timeout=3s'
+alias kubectl='kubectl --request-timeout=3s'
 
 # a base64 gzip file of the soc.yaml values file
 function create_values() {

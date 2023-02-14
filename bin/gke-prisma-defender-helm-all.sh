@@ -4,7 +4,7 @@
 # -s SUB azure subscription
 shopt -s expand_aliases
 alias gcloud='gcloud --verbosity error '
-kubectl='kubectl --request-timeout=3s'
+alias kubectl='kubectl --request-timeout=3s'
 shopt -s nocasematch
 # projects/157690393260/zones/us-central1-a -> us-central1-a
 zone=$(curl --silent http://metadata/computeMetadata/v1/instance/zone -H "Metadata-Flavor: Google" | sed 's,.*/,,')

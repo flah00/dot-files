@@ -26,7 +26,7 @@
 # 1. Delete kubernetes objects from twistlock namespace
 trap 'exit 1' TERM INT
 shopt -s expand_aliases
-kubectl='kubectl --request-timeout=3s'
+alias kubectl='kubectl --request-timeout=2s'
 
 function confirm() {
   confirmed=$1
@@ -152,6 +152,8 @@ case $helm_action in
     ;;
 
   pods)
+    # quickly verify if k8s API is reachable
+    kubectl get node >/dev/null || exit 3
     set -x; exec kubectl -n $helm_namespace get pods
     ;;
 

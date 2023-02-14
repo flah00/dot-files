@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Apply the given action to all of the clusters for the given subscription
 shopt -s expand_aliases
-kubectl='kubectl --request-timeout=3s'
+alias kubectl='kubectl --request-timeout=3s'
 sub=$(az account show | jq -r .id)
 tmp=/tmp/$$.az.aks.list
 trap 'rm -f $tmp' EXIT
