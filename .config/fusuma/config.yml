@@ -1,3 +1,7 @@
+# sudo gpasswd -a $USER input
+# newgrp input
+# sudo apt-get install libinput-tools xdotool
+# sudo /usr/bin/gem2.7 install fusuma
 swipe:
   3:
     left:
