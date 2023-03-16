@@ -1,0 +1,108 @@
+directory: /nfs/music/Music
+default_action: asis
+none_rec_action: asis
+quiet_fallback: asis
+
+plugins: web discogs play lastgenre #duplicates# 
+discogs:
+  user_token: ixRCoBWDaUzmpbCMvKqoKsKhULmjxuafjuzBKdqj
+
+play:
+  command: quodlibet
+
+import:
+  # copy into directory
+  copy: yes
+  # move from current dir to directory
+  move: no
+  # update tags
+  write: yes
+  # during import, set these fields
+  set_fields:
+    #grouping: unlistened
+
+lastgenre:
+  auto: no
+  force: no
+  canonical: ~/.config/beets/genres-tree.yaml
+  whitelist: ~/.config/beets/genre_whitelist.txt
+
+ui:
+  color: yes
+  # Available colors: black, darkred, darkgreen, brown (darkyellow), darkblue,
+  # purple (darkmagenta), teal (darkcyan), lightgray, darkgray, red, green, yellow,
+  # blue, fuchsia (magenta), turquoise (cyan), white
+  colors:
+    text_success: green
+    text_warning: yellow
+    text_error: red
+    text_highlight: red
+    text_highlight_minor: lightgray
+    action_default: turquoise
+    action: blue
+
+duplicates: {}
+paths:
+  default: $albumartist/$album%aunique{}/%if{$disctotal==1,,%if{$disc==0,,${disc}-}}$track $title
+  singleton: Non-Album/$artist/$title
+  comp: Compilations/$album%aunique{}/%if{$disctotal==1,,%if{$disc==0,,${disc}-}}$track $title
+
+match:
+  # The threshold is a distance value between 0.0 and 1.0, so you can think of
+  # it as the opposite of a similarity value. For example, if you want to
+  # automatically accept any matches above 90% similarity, use:
+  # The default strong recommendation threshold is 0.04
+  #
+  # match:
+  #     strong_rec_thresh: 0.10
+  #
+
+  # The medium_rec_thresh and rec_gap_thresh options work similarly. When a
+  # match is below the medium recommendation threshold or the distance between
+  # it and the next-best match is above the gap threshold, the importer will
+  # suggest that match but not automatically confirm it. Otherwise, you’ll see a
+  # list of options to choose from.
+
+  # As mentioned above, autotagger matches have recommendations that control how
+  # the UI behaves for a certain quality of match. The recommendation for a
+  # certain match is based on the overall distance calculation. But you can also
+  # control the recommendation when a specific distance penalty is applied by
+  # defining maximum recommendations for each field:
+  #
+  # To define maxima, use keys under max_rec: in the match section. The defaults
+  # are “medium” for missing and unmatched tracks and “strong” (i.e., no
+  # maximum) for everything else:
+  #
+  # match:
+  #     max_rec:
+  #       missing_tracks: medium
+  #       unmatched_tracks: medium
+
+  # If a recommendation is higher than the configured maximum and the indicated
+  # penalty is applied, the recommendation is downgraded. The setting for each
+  # field can be one of none, low, medium or strong. When the maximum
+  # recommendation is strong, no “downgrading” occurs. The available penalty
+  # names here are:
+  #
+  # source
+  # artist
+  # album
+  # media
+  # mediums
+  # year
+  # country
+  # label
+  # catalognum
+  # albumdisambig
+  # album_id
+  # tracks
+  # missing_tracks
+  # unmatched_tracks
+  # track_title
+  # track_artist
+  # track_index
+  # track_length
+  # track_id
+
+  ignored: missing_tracks, unmatched_tracks
+  required: year label # catalognum country

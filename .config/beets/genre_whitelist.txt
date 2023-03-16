@@ -1,0 +1,93 @@
+acid
+acoustic
+african electronica
+afrobeat
+alternative
+ambient
+americana
+avant-garde
+black metal
+blues
+breakcore
+classical
+classic rock
+comedy
+country
+cybergrind
+dancehall
+dark ambient
+darkwave
+death metal
+deathrock
+dirty south
+disco
+doom metal
+drone
+drone metal
+drum and bass
+dub
+dubstep
+electro
+electroclash
+electronica
+experimental
+field recording
+folk
+folk rock
+free jazz
+funk
+gamelan
+garage rock
+glitch
+gospel
+gothic rock
+grime
+grindcore
+hardcore
+hard rock
+heavy metal
+hip hop
+house
+hypnogogic
+indie rock
+industrial
+italo disco
+jazz
+krautrock
+lo-fi
+math rock
+metal
+minimal
+modern classical
+musique concrète
+neo folk
+new age 
+new wave
+noise
+noise rock
+no wave
+pop
+post-industrial
+post-punk
+post-rock
+progressive electronic
+psychedelic
+psychedelic folk
+psychedelic rock
+punk rock
+rap
+reggae
+rhythm and blues
+rock
+shoegaze
+soul
+soundscape
+soundtrack
+space rock
+stoner rock
+synthpop
+synthwave
+techno
+trip hop
+world
+

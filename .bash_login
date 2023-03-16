@@ -1,0 +1,8 @@
+# vim:set ft=sh:
+if [[ -z $SSH_AGENT_PID ]]; then
+	eval $(ssh-agent -s)
+	ssh-add ~/.ssh/key2.pem
+	ssh-add ~/.ssh/id_dsa
+	ssh-add ~/.ssh/id_rsa
+fi
+. ~/.profile
