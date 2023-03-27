@@ -1,15 +1,35 @@
-alias bi='beet import'
-alias bim='beet import -m'
-alias biC='beet import -C'
-alias vim=nvim.appimage
+# vim {{{
+if [[ -n $NVIM ]]; then
+  export PS1="» "
+  if [ -x /home/flah00/.local/bin/nvr ]; then
+    alias vim=/home/flah00/.local/bin/nvr
+  else
+    alias vim='echo no nesting'
+  fi
+else
+  alias vim=nvim.appimage
+  GIT_PROMPT_THEME=Solarized
+  GIT_PROMPT_ONLY_IN_REPO=1
+  source ~/.bash-git-prompt/gitprompt.sh
+fi
 alias vi=vim
 alias vimdiff='vim -d'
+alias svim='vim -u ~/.SpaceVim/vimrc'
+alias govim='vim -u ~/.vimrc.go'
+# }}}
+
+# grep {{{
 alias grep='grep --color=auto'
 alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
+# }}}
 alias p5p='aws --profile=p5p'
 alias er301='cd er-301; ./testing/linux/emu/emu.elf; cd -'
 
+
+alias bi='beet import'
+alias bim='beet import -m'
+alias biC='beet import -C'
 alias qlplaypause='quodlibet --play-pause'
 alias qlvolume='quodlibet --volume '
 alias qlnow='quodlibet --print-playing'
@@ -39,8 +59,6 @@ function qlbeetnow() {
     title:"$title" artist:"$artist"
   set +x
 }
-
-alias govim='vim -u ~/.vimrc.go'
 
 type aws &>/dev/null && complete -C /usr/bin/aws_completer p5p
 

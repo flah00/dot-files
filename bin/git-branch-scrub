@@ -1,4 +1,5 @@
 #!/bin/bash
 set -e
 git remote prune origin
-git branch --merged | grep -v -e "\*" -e master | xargs -n 1 git branch -d
+git branch --merged | grep -Ev -e "\*" -e '^\s*(master|main)$' | xargs -n 1 git branch -d
+git gc

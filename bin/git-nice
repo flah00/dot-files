@@ -1,5 +1,6 @@
 #!/bin/bash
-set -e
-git checkout master
+set -ex
+branch=$(git branch | grep -E '^\s*\**\s*(main|master)$' | sed 's/[^a-z]//g')
+git checkout $branch
 git pull
 git branch-scrub

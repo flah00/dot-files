@@ -6,7 +6,7 @@
 	excludesfile = /home/flah00/.gitignore_global
 	autocrlf = false
 [merge]
-	tool = vimdiff
+	tool = nvim.appimage -d
 [color]
 	status = auto
 	branch = auto
@@ -26,3 +26,9 @@
 	path = vimdiff
 [push]
 	default = current
+[secrets]
+	yml = /tmp/test
+[init]
+	defaultBranch = main
+[pull]
+	rebase = false

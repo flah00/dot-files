@@ -2,10 +2,11 @@
 set -e
 set -x
 current=`git rev-parse HEAD`
-master=`git rev-parse master`
-[ $current = $master ] && echo "Will not run on master" &&  exit 1
+branch=$(git branch | grep -E '^\s*(main|master)$')
+master=`git rev-parse $branch`
+[ $current = $master ] && echo "Will not run on $branch" &&  exit 1
 
-revs=`git cherry -v origin/master | wc -l | sed 's/[^0-9]//g'`
+revs=`git cherry -v origin/$branch | wc -l | sed 's/[^0-9]//g'`
 revs=$((revs+1))
 prev_commit=`git short-log -1 HEAD | sed 's/^[^ ]* //g'`
 git add .
