@@ -2,9 +2,15 @@
 set -x
 find . \( -name modules -o -name .git -o -name completion \) -prune -o -name .[a-z]\* -print | cpio -dpm ~
 cp -rp bin ~
-if [ -d /etc/bash_completion.d ]; then
-  cp completion/postgresql /etc/bash_completion.d
-else if [ -d /usr/local/etc/bash_completion.d ]; then
+if [ -d /usr/local/etc/bash_completion.d ]; then
   cp completion/postgresql /usr/local/etc/bash_completion.d
+elif [ -d /etc/bash_completion.d ]; then
+  sudo cp completion/postgresql /etc/bash_completion.d
+fi
+
+if `type brew &>/dev/null`; then
+  for p in neovim bash_completion bash-git-prompt nvm rbenv checkov tfenv tfsec terraform terraform-ls terraform-visual; do 
+    brew search $p && brew list $p || brew install $p
+  done
 fi
 

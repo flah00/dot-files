@@ -1,8 +1,8 @@
 # vim {{{
 if [[ -n $NVIM ]]; then
   export PS1="» "
-  if [ -x /home/flah00/.local/bin/nvr ]; then
-    alias vim=/home/flah00/.local/bin/nvr
+  if [ -x $HOME/.local/bin/nvr ]; then
+    alias vim=$HOME/.local/bin/nvr
   else
     alias vim='echo no nesting'
   fi

@@ -1,0 +1,11 @@
+#!/bin/bash
+set -e
+cd $(dirname ${1:-.})
+mkdir -p tmp
+[ ! -d .terraform ] && terraform init || :
+echo generating plan
+terraform plan -no-color -out=tmp/plan.out >/dev/null
+terraform show -no-color -json tmp/plan.out > tmp/plan.json
+echo transforming plan
+terraform-visual --plan tmp/plan.json --out tmp >/dev/null
+open tmp/terraform-visual-report/index.html
