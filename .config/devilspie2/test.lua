@@ -1,0 +1,23 @@
+debug_print("Application: " .. get_application_name())
+debug_print("Window: " .. get_window_name());
+-- set_window_workspace(2);
+-- maximize();
+-- string.match(get_window_name(), "LibreOffice Writer")
+-- make_always_on_top();
+--
+-- Application: Firefox
+-- Window: Employee Training App — Mozilla Firefox
+-- Application: gnome-control-center
+-- Window: Settings
+-- Application: Mike Rodriguez - Droit Financial Technologies - Slack
+-- Window: Mike Rodriguez - Droit Financial Technologies - Slack
+-- Application: gjs
+-- Window: @!0,0;BDHF
+-- Application: gjs
+-- Window: @!1920,0;BDHF
+-- Application: Firefox
+-- Window: Tutorial – Devilspie2 » Linux Magazine — Mozilla Firefox
+-- Application: tilix
+-- Window: Tilix: philipchampon@pcpc: ~
+-- Application: Terminal
+-- Window: philipchampon@pcpc: ~

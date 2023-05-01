@@ -25,5 +25,6 @@ export CLICOLOR=1
 export JS_CMD=node
 export EDITOR=vim
 export BC_ENV_ARGS=~/.bc
+export GPG_TTY=$(tty)
 
 PATH=$PATH:$GOROOT/bin:$GOPATH/bin

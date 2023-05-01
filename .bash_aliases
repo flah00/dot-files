@@ -23,7 +23,22 @@ alias grep='grep --color=auto'
 alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
 # }}}
+
 alias p5p='aws --profile=p5p'
+alias am='aws --profile=master'
+alias an='aws --profile=nonprod'
+alias ap='aws --profile=prod'
+alias as='aws --profile=stage'
+type aws &>/dev/null && complete -C /usr/local/bin/aws_completer aws
+type aws &>/dev/null && complete -C /usr/local/bin/aws_completer am
+type aws &>/dev/null && complete -C /usr/local/bin/aws_completer an
+type aws &>/dev/null && complete -C /usr/local/bin/aws_completer ap
+type aws &>/dev/null && complete -C /usr/local/bin/aws_completer as
+type aws &>/dev/null && complete -C /usr/local/bin/aws_completer p5p
+
+alias k=kubectl
+complete -o default -F __start_kubectl k
+
 alias er301='cd er-301; ./testing/linux/emu/emu.elf; cd -'
 
 
@@ -59,8 +74,6 @@ function qlbeetnow() {
     title:"$title" artist:"$artist"
   set +x
 }
-
-type aws &>/dev/null && complete -C /usr/bin/aws_completer p5p
 
 case `uname -s` in
 Linux)

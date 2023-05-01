@@ -2,9 +2,9 @@ eval `dircolors ~/devel/dot-files/dircolors-solarized/dircolors.ansi-universal`
 
 [ -d ~/.rbenv ] && PATH="$HOME/.rbenv/bin:$PATH"
 test `which rbenv` && eval "$(rbenv init -)"
-[[ -f ~/.completion/all ]] && . ~/.completion/all
-[[ -f ~/.bash_functions ]] && . ~/.bash_functions
-[[ -f ~/.bash_aliases ]] && . ~/.bash_aliases
+[[ -f ~/devel/dot-files/completion/all ]] && . ~/devel/dot-files/completion/all
+[[ -f ~/devel/dot-files/.bash_functions ]] && . ~/devel/dot-files/.bash_functions 
+[[ -f ~/devel/dot-files/.bash_aliases ]] && . ~/devel/dot-files/.bash_aliases 
 
 [[ $(type -t terraform &>/dev/null) ]] && complete -C /usr/bin/terraform terraform
 
