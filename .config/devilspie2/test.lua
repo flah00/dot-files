@@ -5,19 +5,23 @@ debug_print("Window: " .. get_window_name());
 -- string.match(get_window_name(), "LibreOffice Writer")
 -- make_always_on_top();
 --
--- Application: Firefox
--- Window: Employee Training App — Mozilla Firefox
--- Application: gnome-control-center
--- Window: Settings
--- Application: Mike Rodriguez - Droit Financial Technologies - Slack
--- Window: Mike Rodriguez - Droit Financial Technologies - Slack
 -- Application: gjs
 -- Window: @!0,0;BDHF
 -- Application: gjs
 -- Window: @!1920,0;BDHF
+-- Application: Lock Screen — 1Password
+-- Window: Lock Screen — 1Password
+-- Application: devops-eng - D - 3 new items - Slack
+-- Window: devops-eng - D - 3 new items - Slack
 -- Application: Firefox
--- Window: Tutorial – Devilspie2 » Linux Magazine — Mozilla Firefox
--- Application: tilix
--- Window: Tilix: philipchampon@pcpc: ~
+-- Window: Platforms (Client-facing)  — Mozilla Firefox
 -- Application: Terminal
 -- Window: philipchampon@pcpc: ~
+-- Application: tilix
+-- Window: Tilix: philipchampon@pcpc: ~
+-- Application: Untitled window
+-- Window: Untitled window
+-- Application: gnome-session-properties
+-- Window: Startup Applications Preferences
+-- Application: New Tab - Brave
+-- Window: New Tab - Brave
