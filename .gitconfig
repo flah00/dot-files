@@ -1,12 +1,17 @@
 [user]
 	name = Philip Champon
-	email = pchampon@gmail.com
+	email = philip.champon@droitfintech.com
+	signingkey = 83C50E6471383009
+[difftool]
+	#prompt = true
+[diff]
+	tool = nvimdiff
 [core]
-	editor = vim
-	excludesfile = /home/flah00/.gitignore_global
+	editor = nvim
+	excludesfile = /Users/philipchampon/.gitignore_global
 	autocrlf = false
 [merge]
-	tool = nvim.appimage -d
+	tool = nvimdiff
 [color]
 	status = auto
 	branch = auto
@@ -22,8 +27,7 @@
 	short-log = log --abbrev-commit --pretty=oneline
 [github]
 	user = flah00
-[merge "vimdiff"]
-	path = vimdiff
+[merge "nvimdiff"]
 [push]
 	default = current
 [secrets]

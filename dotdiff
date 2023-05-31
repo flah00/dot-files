@@ -7,6 +7,14 @@ if [[ $1 = "cp" ]]; then
     diff -q $orig $file &>/dev/null || cp $orig $file
   done
 
+elif [[ $1 = "files" ]]; then
+  for file in `find . \( $skip \) -prune -o -type f -print`; do
+    diff -qub $file ~/${file##*/} 2>/dev/null
+  done | awk '{print$2,$4}'
+
+elif [[ $1 = vimdiff ]]; then
+  ./dotdiff files | while read a b; do vimdiff $a $b; done
+
 else
   (for file in `find . \( $skip \) -prune -o -type f -print`; do
     diff -ub $file ~/${file##*/} 2>/dev/null

@@ -7,15 +7,13 @@ if [[ -n $NVIM ]]; then
     alias vim='echo no nesting'
   fi
 else
-  alias vim=nvim.appimage
+  alias vim='nvim -u ~/.SpaceVim/vimrc'
   GIT_PROMPT_THEME=Solarized
   GIT_PROMPT_ONLY_IN_REPO=1
   source ~/.bash-git-prompt/gitprompt.sh
 fi
 alias vi=vim
 alias vimdiff='vim -d'
-alias svim='vim -u ~/.SpaceVim/vimrc'
-alias govim='vim -u ~/.vimrc.go'
 # }}}
 
 # grep {{{
@@ -28,19 +26,23 @@ alias p5p='aws --profile=p5p'
 alias am='aws --profile=master'
 alias an='aws --profile=nonprod'
 alias ap='aws --profile=prod'
-alias as='aws --profile=stage'
-type aws &>/dev/null && complete -C /usr/local/bin/aws_completer aws
-type aws &>/dev/null && complete -C /usr/local/bin/aws_completer am
-type aws &>/dev/null && complete -C /usr/local/bin/aws_completer an
-type aws &>/dev/null && complete -C /usr/local/bin/aws_completer ap
-type aws &>/dev/null && complete -C /usr/local/bin/aws_completer as
-type aws &>/dev/null && complete -C /usr/local/bin/aws_completer p5p
+alias as='aws --profile=sandbox'
+alias at='aws --profile=stage'
+acomp_path=$(which aws_completer)
+if [[ $acomp_path ]]; then
+  complete -C $acomp_path aws
+  complete -C $acomp_path am
+  complete -C $acomp_path an
+  complete -C $acomp_path ap
+  complete -C $acomp_path as
+  complete -C $acomp_path at
+  complete -C $acomp_path p5p
+fi
 
 alias k=kubectl
 complete -o default -F __start_kubectl k
 
 alias er301='cd er-301; ./testing/linux/emu/emu.elf; cd -'
-
 
 alias bi='beet import'
 alias bim='beet import -m'

@@ -7,10 +7,11 @@ export ENV=~/.bashrc
 [ -e $ENV ] && . $ENV
 [ -d ~/bin ] && export PATH=$PATH:~/bin
 shopt -s globstar
+set -o vi
 
 [ $TERM = "xterm" -o $TERM = "xterm-color" ] && export TERM="xterm-256color"
 export GOPATH=$HOME/go
-export GOROOT=/usr/local/go
+#export GOROOT=/usr/local/go
 export PAGER=less
 export LANG='en_US.UTF-8'
 export LANGUAGE=$LANG
