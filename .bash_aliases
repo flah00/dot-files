@@ -7,13 +7,13 @@ if [[ -n $NVIM ]]; then
     alias vim='echo no nesting'
   fi
 else
-  alias vim='nvim -u ~/.SpaceVim/vimrc'
+  alias vim='nvim'
   GIT_PROMPT_THEME=Solarized
   GIT_PROMPT_ONLY_IN_REPO=1
   source ~/.bash-git-prompt/gitprompt.sh
 fi
 alias vi=vim
-alias vimdiff='vim -d'
+alias vimdiff='nvim -d'
 # }}}
 
 # grep {{{
@@ -22,6 +22,11 @@ alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
 # }}}
 
+alias tg='terragrunt'
+alias tgab='tg apply tfplan.binary'
+alias tfdm='terraform-docs markdown table . >README.md'
+alias tgpht='env ENABLE_HELM_MANIFEST=true terragrunt plan'
+alias tgphf='env -u ENABLE_HELM_MANIFEST terragrunt plan'
 alias p5p='aws --profile=p5p'
 alias am='aws --profile=master'
 alias an='aws --profile=nonprod'
@@ -85,4 +90,18 @@ Darwin|*[Bb][Ss][Dd]*)
   alias top="top -o cpu -O rsize"
   ;;
 esac
+
+function setupjdk8 {
+  export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
+  export LEIN_JAVA_CMD=${JAVA_HOME}/bin/java
+  sudo update-java-alternatives -s java-1.8.0-openjdk-amd64
+}
+
+function setupjdk11 {
+  export JAVA_HOME=/usr/lib/jvm/java-1.11.0-openjdk-amd64
+  export LEIN_JAVA_CMD=${JAVA_HOME}/bin/java
+  sudo update-java-alternatives -s java-1.11.0-openjdk-amd64
+}
+
+[[ $(type -t direnv) ]] && eval "$(direnv hook bash)"
 # vim:ft=sh:
