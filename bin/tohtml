@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+cat <<EOT >/tmp/script.vim
+:set bg=light
+:TOhtml /tmp/foo.html
+:wq
+:qal
+EOT
+nvim -u /dev/null -s /tmp/script.vim ${1:?Missing file to convert}
+ls -l /tmp/foo.html

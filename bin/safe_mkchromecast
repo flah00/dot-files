@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+restart_mkchromecast() {
+  will_wait=${1:-}
+  if [[ -f ~/tmp/mkchromecast.pid ]]; then
+    kill -9 "$(cat ~/tmp/mkchromecast.pid)"
+  else
+    killall mkchromecast
+  fi
+  sleep 3
+  [[ $will_wait = wait ]] && wait || :
+}
+
+start() {
+  mkchromecast --hijack & echo $! > ~/tmp/mkchromecast.pid
+
+  PULSE_SINK=Mkchromecast
+  export PULSE_SINK
+  # won't start another one
+  sleep 3
+  safe_quodlibet &
+  disown %2
+}
+
+hup() {
+  kill -1 "$(cat ~/tmp/safe_mkchromecast)"
+}
+
+stop() {
+  [[ -f ~/tmp/mkchromecast.pid ]] && kill -9 "$(cat ~/tmp/mkchromecast.pid)" && rm -f ~/tmp/mkchromecast.pid
+  [[ -f ~/tmp/safe_mkchromecast ]] || return 1
+  kill "$(cat ~/tmp/safe_mkchromecast)"
+  rm -f ~/tmp/safe_mkchromecast
+}
+
+status() {
+  if [[ -f ~/tmp/safe_mkchromecast ]]; then
+    echo -n "checking safe_mkchromecast "
+    kill -0 "$(cat ~/tmp/safe_mkchromecast)" &>/dev/null && echo Running || echo Not Running
+  else
+    echo "safe_mkchromecast Not Running"
+  fi
+}
+
+case $1 in
+  start) start ;;
+  hup) hup ;;
+  restart) stop && start ;;
+  stop) stop ;;
+  status) status ;;
+  *)
+    >&2 echo "safe_mkchromecast start|stop|restart|hup|status"
+    exit 1
+    ;;
+esac
