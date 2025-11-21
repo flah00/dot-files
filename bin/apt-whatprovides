@@ -1,0 +1,9 @@
+#!/bin/sh
+#apt-whatprovides ver. 201801010101 Copyright alexx, MIT Licence
+#rdfa:deps="[realpath,apt-file,grep,which,sh,echo]"
+
+BINARY="$(realpath $(which $@) 2>/dev/null)"
+[ -z "$BINARY" ] && BINARY="$@"
+echo Searching for $BINARY
+PACKAGE="$(apt-file search $BINARY|grep -E ":.*[^-.a-zA-Z0-9]${BINARY}$")"
+echo "${PACKAGE}"

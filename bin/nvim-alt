@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+while getopts A:ld:u:ih arg; do
+  case $arg in
+    l) action=list ;;
+    i) action=install ;;
+    d)
+      action=download
+      version=$OPTARG
+      ;;
+    u)
+      action=use
+      version=$OPTARG
+      ;;
+    A) 
+      action=all
+      version=$OPTARG
+      ;;
+    h|*)
+      >&2 echo "${0##/} {-l | -i | -d VERSION | -u VERSION}"
+      exit
+  esac
+done
+
+case $action in
+  all)
+    $0 -d "$version"
+    $0 -i "$version"
+    $0 -u "v$version"
+    ;;
+  list)
+    ls -1 ~/.local/NVIM
+    ;;
+  download)
+    if [[ $version = "" || ! $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+      >&2 echo "Version '$version' is not in format MAJ.MIN.PAT"
+      exit 6
+    fi
+    curl -SL -o ~/Downloads/nvim-linux.tar.gz "https://github.com/neovim/neovim/releases/download/v${version}/nvim-linux-x86_64.tar.gz"
+    ls -l ~/Downloads/nvim-linux.tar.gz
+    ;;
+  install)
+    set -x
+    cd ~/.local/NVIM
+    tar xaf ~/Downloads/nvim-linux.tar.gz
+    version=$(./nvim-linux-x86_64/bin/nvim --version | head -1 | awk '{print$2}')
+    if [[ $version = "" || ! $version =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+      >&2 echo "Version for vim unknown"
+      exit 4
+    elif [[ -d $version ]]; then
+      >&2 echo "Version '$version' already exists"
+      rm -rf nvim-linux64-x86_64
+      exit 5
+    fi
+    mv nvim-linux-x86_64 "$version"
+    cp -r "$(ls -1|head -1)"/man "$version"/
+    ls -l "$version"
+    "$version"/bin/nvim --version
+    ;;
+  use)
+    cd ~/.local
+    [[ $version != "" && -d NVIM/"$version" ]] || (>&2 echo "Version '$version' does not exist" && exit 3)
+    error=false
+    state_dir=$(readlink state/nvim)
+    for i in bin/nvim lib/nvim share/nvim  state/nvim man/man1/nvim.1; do
+      if [[ ! -e $i ]]; then
+        continue
+      elif [[ ! -h $i ]]; then
+        error=true
+        >&2 echo "Will not remove non-link '$i'"
+        continue
+      else
+        rm "$i"
+      fi
+    done
+    if [[ $error = true ]]; then
+      exit 2
+    fi
+
+    mkdir -p NVIM/"$version"/state/nvim
+    ln -rs NVIM/"$version"/bin/nvim bin/
+    ln -rs NVIM/"$version"/lib/nvim lib/
+    ln -rs NVIM/"$version"/share/nvim share/
+    ln -rs NVIM/"$version"/state/nvim state/
+    ln -rs NVIM/"$version"/man/man1/nvim.1 man/man1/
+    if [[ ! -d NVIM/$version/state ]]; then
+      mkdir "NVIM/$version/state"
+      cp -r "$state_dir" "NVIM/$version/state"
+    else
+      >&2 echo WARN: Not copying state
+    fi
+    nvim --version
+    ;;
+  *)
+    >&2 echo "Action '$action' unknown"
+    exit 1
+    ;;
+esac

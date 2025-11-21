@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+declare -a REPOS=()
+declare -a semantic=(adept-http annotator-ui-embedded atl-rest audit-service-http client-readiness-ui decision-ui logic-viewer droit-service)
+declare -a not_semantic=(consensus-builder-ui data-integration-services ref-data-status-checker ref-data-dashboard ref-data-pipeline)
+declare REGEX
+ECR_ENV=nonprod
+
+while getopts e:i:r:h arg; do
+  case $arg in
+    i) REPOS+=("$OPTARG") ;;
+    r) REGEX=$OPTARG ;;
+    e)
+      ECR_ENV=$OPTARG
+      case $OPTARG in
+        n|nonprod) THE_PROFILE=nonprod;;
+        r|release-ecr) THE_PROFILE=release-ecr;;
+        *) THE_PROFILE=$OPTARG;;
+      esac
+      ;;
+    h|*) echo "${0##*/} [-e prod|nonprod] [-i REPO_IMAGE] [-r REGEX]"; exit 0 ;;
+  esac
+done
+
+if [[ ${#REPOS} -eq 0 ]]; then
+  REPOS+=("${semantic[*]}")
+  REPOS+=("${not_semantic[*]}")
+fi
+
+case $ECR_ENV in
+  n|nonprod)
+    for repo in "${REPOS[@]}"; do
+      (set -x; aws ecr describe-repositories --profile "$THE_PROFILE" --repository-names "$repo" | jq '.repositories[] | {arn: .repositoryArn, uri: .repositoryUri}')
+      if [[ $REGEX ]]; then
+        re="$REGEX"
+      elif [[ $repo = decision-ui ]] || [[ $repo = audit-service-http ]] || [[ $repo = client-readiness-ui ]] || [[ $repo = data-integration-services ]]; then
+        # skip pre-releases
+        re='^v[0-9]+.[0-9]+.[0-9]+$'
+      elif [[ $repo =~ ^droit-service ]]; then
+        re="^release-"
+      elif [[ $repo =~ ^ref-data ]]; then
+        re="^gha-"
+      else
+        # presumably this only catches prs merged?
+        # ^gha- is another option?
+        re="^promotion-"
+      fi
+      (set -x; aws --profile nonprod ecr describe-images --repository-name "$repo" | \
+        jq -r '.imageDetails| map(select(.imageTags[]? | test("'"$re"'"))) | max_by(.imagePushedAt) | {image: .repositoryName, pushed: .imagePushedAt, digest: .imageDigest, tags: .imageTags }')
+    done
+    ;;
+  # other environments should be promoted from nonprod
+  # so the latest version is the last one promoted
+  *)
+    for repo in "${REPOS[@]}"; do
+      (set -x; aws ecr describe-repositories --profile "$THE_PROFILE" --repository-names "$repo" | jq '.repositories[] | {arn: .repositoryArn, uri: .repositoryUri}')
+      if [[ $REGEX ]]; then
+        (set -x; aws --profile "$THE_PROFILE" ecr describe-images --repository-name "$repo" | \
+          jq -r '.imageDetails| map(select(.imageTags[]? | test("'"$REGEX"'"))) | max_by(.imagePushedAt) | {image: .repositoryName, pushed: .imagePushedAt, digest: .imageDigest, tags: .imageTags }')
+      else
+        (set -x; aws --profile "$THE_PROFILE" ecr describe-images --repository-name "$repo" | \
+          jq -r '.imageDetails | max_by(.imagePushedAt) | {image: .repositoryName, pushed: .imagePushedAt, digest: .imageDigest, tags: .imageTags }')
+      fi
+    done
+    ;;
+esac

@@ -1,0 +1,8 @@
+tmp
+[A-Z][a-z]*.vim
+*.orig
+*.bak
+
+# vim-clojure?
+.clj-kondo
+.lsp

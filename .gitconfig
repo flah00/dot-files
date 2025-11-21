@@ -1,14 +1,14 @@
 [user]
 	name = Philip Champon
 	email = philip.champon@droitfintech.com
-	signingkey = 83C50E6471383009
+	signingkey = 7DAF9BF13076C43F
 [difftool]
 	#prompt = true
 [diff]
 	tool = nvimdiff
 [core]
 	editor = nvim
-	excludesfile = /Users/philipchampon/.gitignore_global
+	excludesfile = /home/philip.champon/.gitignore_global
 	autocrlf = false
 [merge]
 	tool = nvimdiff
@@ -24,7 +24,8 @@
 	unstage = reset HEAD --
 	last = log -1 HEAD
 	diff-staged = diff --cached
-	short-log = log --abbrev-commit --pretty=oneline
+	short-log = log --abbrev=8 --oneline
+	gone = ! git fetch -p && git for-each-ref --format '%(refname:short) %(upstream:track)' | awk '$2 == \"[gone]\" {print $1}' | xargs -r git branch -D
 [github]
 	user = flah00
 [merge "nvimdiff"]
@@ -36,3 +37,11 @@
 	defaultBranch = main
 [pull]
 	rebase = false
+[safe]
+	directory = /work
+[commit]
+	gpgsign = true
+[credential "https://github.com"]
+	helper = !/usr/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = !/usr/bin/gh auth git-credential

@@ -1,0 +1,11 @@
+#!/bin/bash
+set -euo pipefail
+declare ADD
+ADD=${ADD:-}
+skip=$(sed -e 's/ /|/g' -e 's/\(\[\|\]\)/\\\1/g' <<<"$*")
+[[ ${PLAN_ONCE:-} = true ]] && : || terragrunt plan
+echo "$skip"
+targets=$(jq -r '.resource_changes[] | select(.change.actions[] == ("no-op") | not) | .address' tfplan.json | grep -vE "^$|$skip" | sed -E "s/(.*)/-target=\1 /" | tr -d '\n')
+#targets=$(awk -F'|' '{print$3}' tfplan.summarize |grep -vE "^$|NAME|RES|$skip" | sed "s/ \([^[:space:]]*\)[[:space:]]*/-target=\1 /" | tr -d '\n')
+set -x
+terragrunt plan $targets $ADD

@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cpio_dir() {
+  dir=$1
+  chk_file=$2
+  outdir=$3
+  if [[ ! -d $dir || ! $(ls "$dir"/$chk_file 2>/dev/null) ]]; then
+    return 0
+  fi
+  (
+    echo "Copying $dir to $outdir"
+    cd "$dir"
+    find . -print0 | cpio -pdm0 "$outdir" 2>&1
+  )
+}
+if [[ ! -d /nfs/homes/flah00 ]]; then
+  >&2 echo NFS not mounted
+  exit 1
+fi
+# tascam 250g card
+set -x
+(sudo bash -c 'set -eo pipefail; cd /etc/ && find apt bash_completion.d profile.d/krew.sh profile.d/kubectx.sh sysctl.d udev locale.conf auto[m.]* -print0 | cpio -pdm0 /nfs/homes/flah00/os/backup/onyx/etc 2>&1 | grep -v exists')
+cpio_dir /media/philip.champon/3136-3561 . /nfs/homes/flah00/music/16track
+cpio_dir /media/philip.champon/9016-4EF8 ER-301 /nfs/homes/flah00/music/er301/card
+cpio_dir /media/philip.champon/9016-4EF8 distingEX*hex /nfs/homes/flah00/music/disting-ex
+cpio_dir /media/philip.champon/2638-2244 . /nfs/homes/flah00/music/morphagene
+(cd ~/.config/ && find beets quodlibet -print0 | cpio -pdm0 /nfs/homes/flah00/ 2>&1 | grep -v exists)
+(cd ~ && find Bitwig\ Studio -print0 | cpio -pdm0 /nfs/homes/flah00/music/ 2>&1 | grep -v exists)
