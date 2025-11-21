@@ -1,11 +1,6 @@
-# vim {{{
+# vim:ft=sh:
 if [[ -n $NVIM ]]; then
   export PS1="» "
-  if [ -x $HOME/.local/bin/nvr ]; then
-    alias vim=$HOME/.local/bin/nvr
-  else
-    alias vim='echo no nesting'
-  fi
 else
   alias vim=nvim
   GIT_PROMPT_THEME=Solarized
@@ -15,7 +10,6 @@ fi
 alias cal='ncal -b -S'
 alias vi=vim
 alias vimdiff='vim -d'
-# }}}
 
 alias bash=/bin/bash
 alias okta='flatpak run com.okta.developer.CLI'
@@ -220,5 +214,3 @@ aa() {
   >&2 echo "$aws_profile $aws_region"
   aws --profile "$aws_profile" --region "$aws_region" "$@"
 }
-
-# vim:ft=sh:
