@@ -22,8 +22,9 @@ alias fgrep='fgrep --color=auto'
 alias nexus-user='op read op://DevOps/Nexus\ Prod\ Admin/username'
 alias nexus-pass='op read op://DevOps/Nexus\ Prod\ Admin/password'
 alias tf='terraform'
-alias tfda='terraform-docs asciidoc . >README.adoc'
+alias tfda='terraform-docs asciidoc --output-file README.adoc --output-template "// BEGIN_TF_DOCS\n{{ .Content }}\n// END_TF_DOCS" .'
 alias tg='terragrunt'
+alias tgd='TF_LOG=DEBUG TF_LOG_PATH=/tmp/log tg'
 alias tgc='tg run -- console'
 alias tgab='tg apply tfplan.binary'
 alias tfdm='terraform-docs markdown table . >README.md'
@@ -57,6 +58,7 @@ complete -o default -o nospace -F __start_helm ha
 alias k=kubectl
 complete -o default -F __start_kubectl k
 complete -o default -F __start_kubectl ka
+complete -o default -F __start_kubectl kall
 alias kc=kubectx
 alias kn=kubens
 
@@ -135,6 +137,13 @@ pk() {
   )
 }
 
+kall() {
+  for ctx in $(kubectl config get-clusters); do
+    echo "$ctx"
+    kubectl --context "$ctx" $@
+  done
+}
+
 _file_in_dir_path() {
   local file=$1
   local dir="." file_path
@@ -184,13 +193,19 @@ _kubectx() {
 
 ha() {
   local ctx=$(_kubectx)
-  helm --kube-context "$ctx" "$@"
+  local ns=${PWD##*/}
+  [[ ! $PWD =~ bundles|infra ]] && ns=default
+  (
+    set -x
+    helm --kube-context "$ctx" --namespace "$ns" "$@"
+  )
 }
 # arn:aws:eks:ap-southeast-1:381492021368:cluster/client-integration
 # arn:aws:eks:REGION:ACCT_ID:cluster/ENV
 ka() {
   local ctx=$(_kubectx)
   local ns=${PWD##*/}
+  [[ ! $PWD =~ /(bundles|infra) ]] && ns=default
   (
     set -x
     kubectl --context "$ctx" --namespace "$ns" "$@"
