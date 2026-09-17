@@ -138,9 +138,19 @@ pk() {
 }
 
 kall() {
-  for ctx in $(kubectl config get-clusters); do
-    echo "$ctx"
-    kubectl --context "$ctx" $@
+  local TMPDIR
+  TMPDIR=$(mktemp -d)
+  for ctx in $(kubectl config get-clusters | grep -v NAME); do
+    local log
+    log="$TMPDIR/${ctx//\//_}"
+    eval kubectl --context "$ctx" $@ >"$log"
+    # different outcomes... no-headers vs headers...
+    if [[ $(wc -l "$log") =~ ^1[[:space:]] || ! -s "$log" ]]; then
+      echo "$log no results"
+      rm -f "$log"
+    else
+      echo "$log"
+    fi
   done
 }
 
