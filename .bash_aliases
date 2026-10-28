@@ -26,6 +26,7 @@ alias tfda='terraform-docs asciidoc --output-file README.adoc --output-template 
 alias tg='terragrunt'
 alias tgd='TF_LOG=DEBUG TF_LOG_PATH=/tmp/log tg'
 alias tgc='tg run -- console'
+alias tga='tg apply'
 alias tgab='tg apply tfplan.binary'
 alias tfdm='terraform-docs markdown table . >README.md'
 alias tgpht='env ENABLE_HELM_MANIFEST=true terragrunt plan'
@@ -40,16 +41,16 @@ alias ai='aws --profile=prod-shared-infra'
 alias ascb='aws --profile=droit-scg-hosted-lv-dl'
 acomp_path=$(which aws_completer)
 if [[ $acomp_path ]]; then
-  complete -C $acomp_path aws
-  complete -C $acomp_path am
-  complete -C $acomp_path an
-  complete -C $acomp_path ap
-  complete -C $acomp_path as
-  complete -C $acomp_path at
-  complete -C $acomp_path ai
-  complete -C $acomp_path ascb
-  complete -C $acomp_path p5p
-  complete -C $acomp_path aa
+  complete -C "$acomp_path" aws
+  complete -C "$acomp_path" am
+  complete -C "$acomp_path" an
+  complete -C "$acomp_path" ap
+  complete -C "$acomp_path" as
+  complete -C "$acomp_path" at
+  complete -C "$acomp_path" ai
+  complete -C "$acomp_path" ascb
+  complete -C "$acomp_path" p5p
+  complete -C "$acomp_path" aa
 fi
 
 alias h=helm
